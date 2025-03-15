@@ -1,0 +1,79 @@
+import inspect
+from typing import Self, Callable, ParamSpec, TypeVar, cast, Any
+from pydantic import BaseModel
+import griffe
+
+from tools.docstring_style import infer_docstring_style
+
+ToolParamSpec = ParamSpec("ToolParamSpec")
+ToolReturn = TypeVar("ToolReturn")
+
+
+class Argument(BaseModel):
+    name: str
+    description: str
+    annotation: type
+    required: bool = True
+
+
+class Tool(BaseModel):
+    name: str
+    description: str
+    arguments: list[Argument]
+    function: Callable[ToolParamSpec, ToolReturn]
+
+    @classmethod
+    def from_function(cls, function) -> Self:
+        signature = inspect.signature(function)
+        description, arguments_descriptions = documentation_descriptions(function, signature)
+
+        arguments = []
+        for parameter in signature.parameters.values():
+            argument_description = arguments_descriptions.get(parameter.name, "")
+            argument_annotation = parameter.annotation if parameter.annotation != inspect.Parameter.empty else Any
+            arguments.append(
+                Argument(
+                    name=parameter.name,
+                    description=argument_description,
+                    annotation=argument_annotation,
+                    required=(parameter.default == inspect.Parameter.empty)
+                )
+            )
+
+        return cls(
+            name=function.__name__,
+            description=description,
+            arguments=arguments,
+            function=function,
+        )
+
+
+def documentation_descriptions(
+        function: Callable[ToolParamSpec, ToolReturn],
+        signature: inspect.Signature,
+) -> tuple[str, dict[str, str]]:
+    main_description_default = ""
+    parameters_descriptions_default = {}
+
+    documentation = function.__doc__
+    if documentation is None:
+        return main_description_default, parameters_descriptions_default
+
+    parent = cast(griffe.Object, signature)
+
+    docstring_style = infer_docstring_style(documentation)
+    docstring = griffe.Docstring(documentation, lineno=1, parser=docstring_style, parent=parent)
+    sections = docstring.parse()
+
+    if parameters := next((
+            parameter for parameter in sections
+            if parameter.kind == griffe.DocstringSectionKind.parameters),
+            parameters_descriptions_default
+    ):
+        parameters = {parameter.name: parameter.description for parameter in parameters.value}
+
+    main_description = main_description_default
+    if main := next((p for p in sections if p.kind == griffe.DocstringSectionKind.text), None):
+        main_description = main.value
+
+    return main_description, parameters
