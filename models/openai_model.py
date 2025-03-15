@@ -23,8 +23,16 @@ class OpenAIModel(APIModel):
         super().__init__(model_name, api_key, base_url, **client_arguments)
         self.strict_mode = strict_mode
 
-        self.client = Client(api_key=api_key, base_url=base_url, **client_arguments)
-        self.async_client = AsyncClient(api_key=api_key, base_url=base_url, **client_arguments)
+        self.client = Client(
+            api_key=api_key,
+            base_url=base_url,
+            **client_arguments
+        )
+        self.async_client = AsyncClient(
+            api_key=api_key,
+            base_url=base_url,
+            **client_arguments
+        )
 
     def _process_tools(
             self,
