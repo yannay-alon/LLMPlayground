@@ -1,5 +1,5 @@
 import inspect
-from typing import Self, Callable, ParamSpec, TypeVar, cast, Any
+from typing import Self, Callable, ParamSpec, TypeVar, cast, Any, Generic
 from pydantic import BaseModel
 import griffe
 
@@ -16,14 +16,14 @@ class Argument(BaseModel):
     required: bool = True
 
 
-class Tool(BaseModel):
+class Tool(BaseModel, Generic[ToolParamSpec, ToolReturn]):
     name: str
     description: str
     arguments: list[Argument]
     function: Callable[ToolParamSpec, ToolReturn]
 
     @classmethod
-    def from_function(cls, function) -> Self:
+    def from_function(cls, function: Callable[ToolParamSpec, ToolReturn]) -> Self:
         signature = inspect.signature(function)
         description, arguments_descriptions = documentation_descriptions(function, signature)
 
@@ -46,6 +46,9 @@ class Tool(BaseModel):
             arguments=arguments,
             function=function,
         )
+
+    def __call__(self, *args: ToolParamSpec.args, **kwargs: ToolParamSpec.kwargs) -> ToolReturn:
+        return self.function(*args, **kwargs)
 
 
 def documentation_descriptions(
