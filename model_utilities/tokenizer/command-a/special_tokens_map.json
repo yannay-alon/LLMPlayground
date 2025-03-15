@@ -1,0 +1,34 @@
+{
+  "bos_token": {
+    "content": "<BOS_TOKEN>",
+    "lstrip": false,
+    "normalized": false,
+    "rstrip": false,
+    "single_word": false
+  },
+  "eos_token": {
+    "content": "<|END_OF_TURN_TOKEN|>",
+    "lstrip": false,
+    "normalized": false,
+    "rstrip": false,
+    "single_word": false
+  },
+  "pad_token": {
+    "content": "<PAD>",
+    "lstrip": false,
+    "normalized": false,
+    "rstrip": false,
+    "single_word": false
+  },
+  "unk_token": {
+    "content": "<UNK>",
+    "lstrip": false,
+    "normalized": false,
+    "rstrip": false,
+    "single_word": false
+  },
+  "additional_special_tokens": [
+    "<|START_RESPONSE|>",
+    "<|END_RESPONSE|>"
+  ]
+}
