@@ -1,6 +1,6 @@
 import inspect
 from typing import Self, Callable, ParamSpec, TypeVar, cast, Any, Generic
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field, TypeAdapter
 import griffe
 
 from tools.docstring_style import infer_docstring_style
@@ -14,6 +14,11 @@ class Argument(BaseModel):
     description: str
     annotation: type
     required: bool = True
+
+    @computed_field
+    @property
+    def type(self) -> str:
+        return TypeAdapter(self.annotation).json_schema().get("type", "string")
 
 
 class Tool(BaseModel, Generic[ToolParamSpec, ToolReturn]):

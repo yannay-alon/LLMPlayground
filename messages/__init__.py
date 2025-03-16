@@ -5,12 +5,10 @@ from messages.messages import (
     AssistantMessage,
     ToolMessage,
     MessageFactory,
-    BaseMessageType
 )
 
 __all__ = [
     "BaseMessage",
-    "BaseMessageType",
     "UserMessage",
     "SystemMessage",
     "AssistantMessage",

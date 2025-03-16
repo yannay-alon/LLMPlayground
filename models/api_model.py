@@ -19,7 +19,6 @@ class APIModel(ABC):
             model_name: str,
             api_key: str | None = None,
             base_url: str | None = None,
-            **client_arguments
     ):
         self.model_name = model_name
         self.api_key = api_key
@@ -264,7 +263,7 @@ class APIModel(ABC):
         :param tools: The tools to process
         :param documents: The documents to process
         :param response_format: The output response format to process
-        :return: The processed messages, processed tools, processed documents, and any additional tokenization arguments.
+        :return: Processed messages, processed tools, processed documents, and any additional tokenization arguments.
         If the tokenizer does not support any of the arguments, return None for that argument.
         """
         pass

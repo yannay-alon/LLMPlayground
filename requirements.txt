@@ -1,3 +1,4 @@
 transformers==4.48.2
 openai==1.16.1
 griffe==1.5.7
+cohere==5.14.0
