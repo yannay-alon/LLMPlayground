@@ -5,8 +5,8 @@ import griffe
 
 from tools.docstring_style import infer_docstring_style
 
-ToolParamSpec = ParamSpec("ToolParamSpec")
-ToolReturn = TypeVar("ToolReturn")
+ToolInput = ParamSpec("ToolInput")
+ToolOutput = TypeVar("ToolOutput")
 
 
 class Argument(BaseModel):
@@ -21,14 +21,14 @@ class Argument(BaseModel):
         return TypeAdapter(self.annotation).json_schema().get("type", "string")
 
 
-class Tool(BaseModel, Generic[ToolParamSpec, ToolReturn]):
+class Tool(BaseModel, Generic[ToolInput, ToolOutput]):
     name: str
     description: str
     arguments: list[Argument]
-    function: Callable[ToolParamSpec, ToolReturn]
+    function: Callable[ToolInput, ToolOutput]
 
     @classmethod
-    def from_function(cls, function: Callable[ToolParamSpec, ToolReturn]) -> Self:
+    def from_function(cls, function: Callable[ToolInput, ToolOutput]) -> Self:
         signature = inspect.signature(function)
         description, arguments_descriptions = documentation_descriptions(function, signature)
 
@@ -52,12 +52,12 @@ class Tool(BaseModel, Generic[ToolParamSpec, ToolReturn]):
             function=function,
         )
 
-    def __call__(self, *args: ToolParamSpec.args, **kwargs: ToolParamSpec.kwargs) -> ToolReturn:
+    def __call__(self, *args: ToolInput.args, **kwargs: ToolInput.kwargs) -> ToolOutput:
         return self.function(*args, **kwargs)
 
 
 def documentation_descriptions(
-        function: Callable[ToolParamSpec, ToolReturn],
+        function: Callable[ToolInput, ToolOutput],
         signature: inspect.Signature,
 ) -> tuple[str, dict[str, str]]:
     main_description_default = ""
