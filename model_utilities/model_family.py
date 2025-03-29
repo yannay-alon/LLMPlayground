@@ -6,14 +6,16 @@ from enum import StrEnum
 class ModelFamily(StrEnum):
     COMMAND_A = "command-a"
     COMMAND_R = "command-r"
+    DEEPSEEK = "deepseek"
     LLAMA = "llama"
     MIXTRAL = "mixtral"
+    MISTRAL = "mistral"
     GEMMA = "gemma"
 
     @staticmethod
     def infer_family(model_name: str) -> ModelFamily:
         for model_family in ModelFamily:
-            if model_family in model_name:
+            if model_family in model_name.lower():
                 return ModelFamily(model_family)
 
         raise ValueError(f"Model family could not be inferred from model name: {model_name}")
