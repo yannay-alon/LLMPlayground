@@ -201,6 +201,7 @@ class APIModel(ABC):
             *,
             tokenize: bool = False,
             continue_final_message: bool = False,
+            chat_template: str | None = None,
             **kwargs
     ) -> str | list[int]:
         loaded_messages = self._load_messages(messages)
@@ -231,6 +232,7 @@ class APIModel(ABC):
             **non_empty_tokenization_arguments,
             tokenize=tokenize,
             continue_final_message=continue_final_message,
+            chat_template=chat_template,
             **kwargs
         )
 
