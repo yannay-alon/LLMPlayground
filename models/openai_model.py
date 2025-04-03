@@ -1,6 +1,7 @@
 from typing import Any, cast
 
-from openai import AsyncStream, Stream, OpenAI, AsyncOpenAI
+import httpx
+from openai import AsyncStream, Stream, Client, AsyncClient
 from openai.types.chat import ChatCompletionToolParam, ChatCompletion, ChatCompletionChunk
 from openai.types.chat.completion_create_params import ResponseFormat
 from openai.types.shared_params.function_definition import FunctionDefinition
@@ -25,15 +26,19 @@ class OpenAIModel(APIModel):
         super().__init__(model_name, api_key, base_url)
         self.strict_mode = strict_mode
 
-        sync_client_arguments = sync_client_arguments or {}
-        self.client = OpenAI(
+        sync_client_arguments = sync_client_arguments or dict(
+            http_client=httpx.Client()
+        )
+        self.client = Client(
             api_key=api_key,
             base_url=base_url,
             **sync_client_arguments
         )
 
-        async_client_arguments = async_client_arguments or {}
-        self.async_client = AsyncOpenAI(
+        async_client_arguments = async_client_arguments or dict(
+            http_client=httpx.AsyncClient()
+        )
+        self.async_client = AsyncClient(
             api_key=api_key,
             base_url=base_url,
             **async_client_arguments
