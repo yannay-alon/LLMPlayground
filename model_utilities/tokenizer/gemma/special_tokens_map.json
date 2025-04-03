@@ -1,8 +1,5 @@
 {
-  "additional_special_tokens": [
-    "<start_of_turn>",
-    "<end_of_turn>"
-  ],
+  "boi_token": "<start_of_image>",
   "bos_token": {
     "content": "<bos>",
     "lstrip": false,
@@ -10,6 +7,7 @@
     "rstrip": false,
     "single_word": false
   },
+  "eoi_token": "<end_of_image>",
   "eos_token": {
     "content": "<eos>",
     "lstrip": false,
@@ -17,6 +15,7 @@
     "rstrip": false,
     "single_word": false
   },
+  "image_token": "<image_soft_token>",
   "pad_token": {
     "content": "<pad>",
     "lstrip": false,
