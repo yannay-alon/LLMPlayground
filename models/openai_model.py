@@ -106,7 +106,11 @@ class OpenAIModel(APIModel):
             max_tokens: int | None,
             temperature: float
     ) -> ChatCompletion | Stream[ChatCompletionChunk]:
-        dumped_messages, open_ai_compatible_tools, open_ai_compatible_response_format = (
+        (
+            dumped_messages,
+            open_ai_compatible_tools,
+            open_ai_compatible_response_format
+        ) = (
             self._prepare_arguments(messages, tools, documents, response_format)
         )
 
@@ -130,7 +134,11 @@ class OpenAIModel(APIModel):
             max_tokens: int | None,
             temperature: float
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
-        dumped_messages, open_ai_compatible_tools, open_ai_compatible_response_format = self._prepare_arguments(
+        (
+            dumped_messages,
+            open_ai_compatible_tools,
+            open_ai_compatible_response_format
+        ) = self._prepare_arguments(
             messages,
             tools,
             documents,
@@ -177,7 +185,11 @@ class OpenAIModel(APIModel):
             documents: list[Document] | None,
             response_format: type[BaseModel] | None
     ) -> tuple[list[dict[str, str]], list[dict[str, str]] | None, list[dict[str, Any]] | None, dict[str, Any]]:
-        dumped_messages, open_ai_compatible_tools, _ = self._prepare_arguments(
+        (
+            dumped_messages,
+            open_ai_compatible_tools,
+            _
+        ) = self._prepare_arguments(
             messages,
             tools,
             documents,

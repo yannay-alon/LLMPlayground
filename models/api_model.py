@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import overload, Literal, TypeVar, Any
+from typing import overload, Literal, Any
 
 from openai import Stream, AsyncStream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
@@ -7,10 +7,8 @@ from pydantic import BaseModel
 
 from documents import Document
 from messages import BaseMessage, MessageFactory
-from tools import Tool
 from model_utilities import get_tokenizer
-
-MESSAGE_TYPE = TypeVar("MESSAGE_TYPE", bound=BaseMessage)
+from tools import Tool
 
 
 class APIModel(ABC):
@@ -206,13 +204,16 @@ class APIModel(ABC):
     ) -> str | list[int]:
         loaded_messages = self._load_messages(messages)
 
-        processed_messages, processed_tools, processed_documents, additional_tokenization_arguments = (
-            self._process_arguments_for_prompt_creation(
-                loaded_messages,
-                tools,
-                documents,
-                response_format
-            )
+        (
+            processed_messages,
+            processed_tools,
+            processed_documents,
+            additional_tokenization_arguments
+        ) = self._process_arguments_for_prompt_creation(
+            loaded_messages,
+            tools,
+            documents,
+            response_format
         )
 
         tokenization_arguments = {
@@ -239,7 +240,7 @@ class APIModel(ABC):
     # </editor-fold>
 
     @staticmethod
-    def _load_messages(messages: list[MESSAGE_TYPE | dict[str, str]]) -> list[MESSAGE_TYPE]:
+    def _load_messages(messages: list[BaseMessage | dict[str, str]]) -> list[BaseMessage]:
         loaded_messages = []
         for message in messages:
             if isinstance(message, BaseMessage):
