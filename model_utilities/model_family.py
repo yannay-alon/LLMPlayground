@@ -6,11 +6,7 @@ from enum import StrEnum
 class ModelFamily(StrEnum):
     COMMAND_A = "command-a"
     COMMAND_R = "command-r"
-    DEEPSEEK = "deepseek"
     LLAMA = "llama"
-    MIXTRAL = "mixtral"
-    MISTRAL = "mistral"
-    GEMMA = "gemma"
 
     @staticmethod
     def infer_family(model_name: str) -> ModelFamily:
