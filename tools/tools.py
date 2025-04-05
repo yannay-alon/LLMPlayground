@@ -1,7 +1,9 @@
 import inspect
+from copy import deepcopy
 from typing import Self, Callable, ParamSpec, TypeVar, cast, Any, Generic
-from pydantic import BaseModel, computed_field, TypeAdapter
+
 import griffe
+from pydantic import BaseModel, computed_field, TypeAdapter
 
 from tools.docstring_style import infer_docstring_style
 
@@ -27,8 +29,30 @@ class Tool(BaseModel, Generic[ToolInput, ToolOutput]):
     arguments: list[Argument]
     function: Callable[ToolInput, ToolOutput]
 
+    def __init__(self, *args, **kwargs):
+        # Check whether this is used as a decorator
+        function = None
+        if len(args) == 0 and len(kwargs) == 1 and "function" in kwargs:
+            function = kwargs.pop("function")
+        elif len(args) == 1 and len(kwargs) == 0 and isinstance(args[0], (Tool, Callable)):
+            function = args[0]
+
+        if function is not None:
+            tool = self.from_function(function)
+            super().__init__(
+                name=tool.name,
+                description=tool.description,
+                arguments=tool.arguments,
+                function=tool.function,
+            )
+        else:
+            super().__init__(**kwargs)
+
     @classmethod
-    def from_function(cls, function: Callable[ToolInput, ToolOutput]) -> Self:
+    def from_function(cls, function: Callable[ToolInput, ToolOutput] | "Tool") -> Self:
+        if isinstance(function, Tool):
+            return deepcopy(function)
+
         signature = inspect.signature(function)
         description, arguments_descriptions = documentation_descriptions(function, signature)
 
