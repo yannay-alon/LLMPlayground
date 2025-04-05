@@ -77,8 +77,8 @@ class OpenAIModel(APIModel):
             )
         return open_ai_compatible_tools
 
+    @staticmethod
     def _add_documents_to_messages(
-            self,
             messages: list[BaseMessage],
             documents: list[Document] | None
     ) -> list[BaseMessage]:
