@@ -1,9 +1,8 @@
-from __future__ import annotations
-
-from typing import Literal
+import uuid
 import warnings
+from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class BaseMessage(BaseModel):
@@ -25,6 +24,7 @@ class AssistantMessage(BaseMessage):
 
 class ToolMessage(BaseMessage):
     role: Literal["tool"] = "tool"
+    identifier: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="id")
 
 
 class MessageFactory:
