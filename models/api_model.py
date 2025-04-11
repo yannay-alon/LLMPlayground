@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import overload, Literal, Any
+from typing import overload, Literal, Any, Iterable, AsyncIterable
 
-from openai import Stream, AsyncStream
-from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from pydantic import BaseModel
 
 from documents import Document
 from messages import BaseMessage, MessageFactory
 from model_utilities import get_tokenizer
+from responses import Completion
 from tools import Tool
 
 
@@ -22,7 +21,10 @@ class APIModel(ABC):
         self.api_key = api_key
         self.base_url = base_url
 
-        self.tokenizer = get_tokenizer(model_name)
+        try:
+            self.tokenizer = get_tokenizer(model_name)
+        except (ValueError, OSError):
+            self.tokenizer = None
 
     # <editor-fold desc="Synchronous">
 
@@ -37,7 +39,7 @@ class APIModel(ABC):
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> ChatCompletion:
+    ) -> Completion:
         ...
 
     @overload
@@ -51,7 +53,7 @@ class APIModel(ABC):
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> Stream[ChatCompletionChunk]:
+    ) -> Iterable[Completion]:
         ...
 
     def invoke(
@@ -64,7 +66,7 @@ class APIModel(ABC):
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
+    ) -> Completion | Iterable[Completion]:
         loaded_messages = self._load_messages(messages)
 
         return self._invoke(
@@ -87,7 +89,7 @@ class APIModel(ABC):
             response_format: type[BaseModel] | None,
             max_tokens: int | None,
             temperature: float
-    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
+    ) -> Completion | Iterable[Completion]:
         pass
 
     # </editor-fold>
@@ -105,7 +107,7 @@ class APIModel(ABC):
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> ChatCompletion:
+    ) -> Completion:
         ...
 
     @overload
@@ -119,7 +121,7 @@ class APIModel(ABC):
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> AsyncStream[ChatCompletionChunk]:
+    ) -> AsyncIterable[Completion]:
         ...
 
     async def async_invoke(
@@ -132,7 +134,7 @@ class APIModel(ABC):
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
+    ) -> Completion | AsyncIterable[Completion]:
         loaded_messages = self._load_messages(messages)
 
         return await self._async_invoke(
@@ -155,7 +157,7 @@ class APIModel(ABC):
             response_format: type[BaseModel] | None,
             max_tokens: int | None,
             temperature: float
-    ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
+    ) -> Completion | AsyncIterable[Completion]:
         pass
 
     # </editor-fold>
@@ -202,6 +204,9 @@ class APIModel(ABC):
             chat_template: str | None = None,
             **kwargs
     ) -> str | list[int]:
+        if self.tokenizer is None:
+            raise ValueError("Tokenizer is not available for this model. Cannot create prompt.")
+
         loaded_messages = self._load_messages(messages)
 
         (

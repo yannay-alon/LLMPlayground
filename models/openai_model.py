@@ -1,8 +1,12 @@
-from typing import Any, cast
+import json
+from collections import defaultdict
+from typing import Any, cast, Iterable, AsyncIterable
 
 import httpx
-from openai import AsyncStream, Stream, Client, AsyncClient
-from openai.types.chat import ChatCompletionToolParam, ChatCompletion, ChatCompletionChunk
+from openai import Client, AsyncClient
+from openai.types.chat import ChatCompletionToolParam
+from openai.types.chat.chat_completion import Choice as OpenAIChoice
+from openai.types.chat.chat_completion_chunk import Choice as OpenAIChoiceChunk
 from openai.types.chat.completion_create_params import ResponseFormat
 from openai.types.shared_params.function_definition import FunctionDefinition
 from pydantic import BaseModel
@@ -10,6 +14,8 @@ from pydantic import BaseModel
 from documents import Document
 from messages import BaseMessage, UserMessage
 from models.api_model import APIModel
+from responses import Completion, Choice, ToolCall, Usage
+from responses.choice import FinishReason
 from tools import Tool
 
 
@@ -105,7 +111,7 @@ class OpenAIModel(APIModel):
             response_format: type[BaseModel] | None,
             max_tokens: int | None,
             temperature: float
-    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
+    ) -> Completion | Iterable[Completion]:
         (
             dumped_messages,
             open_ai_compatible_tools,
@@ -114,7 +120,7 @@ class OpenAIModel(APIModel):
             self._prepare_arguments(messages, tools, documents, response_format)
         )
 
-        return self.client.chat.completions.create(
+        response = self.client.chat.completions.create(
             model=self.model_name,
             messages=dumped_messages,
             stream=stream,
@@ -123,6 +129,34 @@ class OpenAIModel(APIModel):
             max_tokens=max_tokens,
             temperature=temperature,
         )
+        if not stream:
+            choices = [
+                self._build_choice(
+                    choice,
+                    use_structured_output=response_format is not None,
+                    tools=tools,
+                )
+                for choice in response.choices
+            ]
+            usage = Usage(
+                input_tokens=response.usage.prompt_tokens,
+                output_tokens=response.usage.completion_tokens,
+            )
+            return Completion(choices=choices, usage=usage)
+        else:
+            def streaming_generator() -> Iterable[Completion]:
+                for chunk in response:
+                    choices = [
+                        self._build_choice(
+                            choice,
+                            use_structured_output=response_format is not None,
+                            tools=tools,
+                        )
+                        for choice in chunk.choices
+                    ]
+                    yield Completion(choices=choices, usage=None)
+
+            return streaming_generator()
 
     async def _async_invoke(
             self,
@@ -133,7 +167,7 @@ class OpenAIModel(APIModel):
             response_format: type[BaseModel] | None,
             max_tokens: int | None,
             temperature: float
-    ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
+    ) -> Completion | AsyncIterable[Completion]:
         (
             dumped_messages,
             open_ai_compatible_tools,
@@ -145,7 +179,7 @@ class OpenAIModel(APIModel):
             response_format
         )
 
-        return await self.async_client.chat.completions.create(
+        response = await self.async_client.chat.completions.create(
             model=self.model_name,
             messages=dumped_messages,
             stream=stream,
@@ -154,6 +188,35 @@ class OpenAIModel(APIModel):
             max_tokens=max_tokens,
             temperature=temperature,
         )
+
+        if not stream:
+            choices = [
+                self._build_choice(
+                    choice,
+                    use_structured_output=response_format is not None,
+                    tools=tools,
+                )
+                for choice in response.choices
+            ]
+            usage = Usage(
+                input_tokens=response.usage.prompt_tokens,
+                output_tokens=response.usage.completion_tokens,
+            )
+            return Completion(choices=choices, usage=usage)
+        else:
+            async def streaming_generator() -> AsyncIterable[Completion]:
+                async for chunk in response:
+                    choices = [
+                        self._build_choice(
+                            choice,
+                            use_structured_output=response_format is not None,
+                            tools=tools,
+                        )
+                        for choice in chunk.choices
+                    ]
+                    yield Completion(choices=choices, usage=None)
+
+            return streaming_generator()
 
     def _prepare_arguments(
             self,
@@ -197,3 +260,37 @@ class OpenAIModel(APIModel):
         )
         additional_tokenization_arguments = {}
         return dumped_messages, open_ai_compatible_tools, None, additional_tokenization_arguments
+
+    @staticmethod
+    def _build_choice(
+            choice: OpenAIChoice | OpenAIChoiceChunk,
+            use_structured_output: bool,
+            tools: list[Tool] | None = None
+    ) -> Choice:
+        if choice.finish_reason is None:
+            finish_reason = FinishReason.NONE
+        else:
+            finish_reason = FinishReason(choice.finish_reason)
+
+        if isinstance(choice, OpenAIChoiceChunk):
+            message = choice.delta
+        else:
+            message = choice.message
+
+        tool_mapping = defaultdict()
+        for tool in tools or []:
+            tool_mapping[tool.name] = tool
+
+        return Choice(
+            content=message.content,
+            finish_reason=finish_reason,
+            tool_calls=[
+                ToolCall(
+                    identifier=tool_call.id,
+                    tool=tool_mapping[tool_call.function.name],
+                    arguments_values=json.loads(tool_call.function.arguments)
+                )
+                for tool_call in message.tool_calls or []
+            ],
+            parsed=message.parsed if use_structured_output else None,
+        )
