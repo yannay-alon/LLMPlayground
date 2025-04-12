@@ -15,9 +15,9 @@ You can take a look in the `openai_model.py` file for an example of how to imple
 <u>Optional</u>:<br>
 For the prompt creation, we utilize HuggingFace's `transformers` library, specifically the `AutoTokenizer` class.
 To allow for automatic tokenization, you should:
-1. Add a directory under `model_utilities/tokenizer` with the name of your model's family.
-2. Add a `tokenizer_config.json`, `special_tokens_map.json`, and `tokenizer.json` file to the directory.
-3. Add your model's family to the `ModelFamily` enum in `model_utilities/model_family.py`.
+1. Add a directory under `models/utilities/tokenizer` with the name of your model's family.
+2. Add a `tokenizer_config.json`, a `special_tokens_map.json`, and a `tokenizer.json` file to the directory.
+3. Add your model's family to the `ModelFamily` enum in `modeld/utilities/model_family.py`.
 
 If you do not add the tokenizer, the `create_prompt` method will not be available.
 
