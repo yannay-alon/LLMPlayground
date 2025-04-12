@@ -13,10 +13,10 @@ from pydantic import BaseModel
 
 from components.documents import Document
 from components.messages import BaseMessage, UserMessage
-from models.api_model import APIModel
 from components.responses import Completion, Choice, ToolCall, Usage
 from components.responses.choice import FinishReason
 from components.tools import Tool
+from models.api_model import APIModel
 
 
 class OpenAIModel(APIModel):
@@ -116,9 +116,7 @@ class OpenAIModel(APIModel):
             dumped_messages,
             open_ai_compatible_tools,
             open_ai_compatible_response_format
-        ) = (
-            self._prepare_arguments(messages, tools, documents, response_format)
-        )
+        ) = self._prepare_arguments(messages, tools, documents, response_format)
 
         response = self.client.chat.completions.create(
             model=self.model_name,
@@ -172,12 +170,7 @@ class OpenAIModel(APIModel):
             dumped_messages,
             open_ai_compatible_tools,
             open_ai_compatible_response_format
-        ) = self._prepare_arguments(
-            messages,
-            tools,
-            documents,
-            response_format
-        )
+        ) = self._prepare_arguments(messages, tools, documents, response_format)
 
         response = await self.async_client.chat.completions.create(
             model=self.model_name,
@@ -252,12 +245,7 @@ class OpenAIModel(APIModel):
             dumped_messages,
             open_ai_compatible_tools,
             _
-        ) = self._prepare_arguments(
-            messages,
-            tools,
-            documents,
-            response_format
-        )
+        ) = self._prepare_arguments(messages, tools, documents, response_format)
         additional_tokenization_arguments = {}
         return dumped_messages, open_ai_compatible_tools, None, additional_tokenization_arguments
 
