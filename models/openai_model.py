@@ -17,6 +17,7 @@ from components.responses import Completion, Choice, ToolCall, Usage
 from components.responses.choice import FinishReason
 from components.tools import Tool
 from models.api_model import APIModel
+from models.utilities.json_parsing import parse_json
 
 
 class OpenAIModel(APIModel):
@@ -131,7 +132,7 @@ class OpenAIModel(APIModel):
             choices = [
                 self._build_choice(
                     choice,
-                    use_structured_output=response_format is not None,
+                    response_format,
                     tools=tools,
                 )
                 for choice in response.choices
@@ -147,7 +148,7 @@ class OpenAIModel(APIModel):
                     choices = [
                         self._build_choice(
                             choice,
-                            use_structured_output=response_format is not None,
+                            response_format=None,  # No support for structured output in streaming mode
                             tools=tools,
                         )
                         for choice in chunk.choices
@@ -186,7 +187,7 @@ class OpenAIModel(APIModel):
             choices = [
                 self._build_choice(
                     choice,
-                    use_structured_output=response_format is not None,
+                    response_format=response_format,
                     tools=tools,
                 )
                 for choice in response.choices
@@ -202,7 +203,7 @@ class OpenAIModel(APIModel):
                     choices = [
                         self._build_choice(
                             choice,
-                            use_structured_output=response_format is not None,
+                            response_format=None,  # No support for structured output in streaming mode
                             tools=tools,
                         )
                         for choice in chunk.choices
@@ -252,7 +253,7 @@ class OpenAIModel(APIModel):
     @staticmethod
     def _build_choice(
             choice: OpenAIChoice | OpenAIChoiceChunk,
-            use_structured_output: bool,
+            response_format: type[BaseModel] | None = None,
             tools: list[Tool] | None = None
     ) -> Choice:
         if choice.finish_reason is None:
@@ -269,8 +270,12 @@ class OpenAIModel(APIModel):
         for tool in tools or []:
             tool_mapping[tool.name] = tool
 
+        parsed_message = None
+        if response_format is not None:
+            parsed_message = parse_json(message.content, response_format)
+
         return Choice(
-            content=message.content,
+            content=message.content or "",
             finish_reason=finish_reason,
             tool_calls=[
                 ToolCall(
@@ -280,5 +285,5 @@ class OpenAIModel(APIModel):
                 )
                 for tool_call in message.tool_calls or []
             ],
-            parsed=message.parsed if use_structured_output else None,
+            parsed=parsed_message,
         )
