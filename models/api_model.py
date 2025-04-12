@@ -3,11 +3,11 @@ from typing import overload, Literal, Any, Iterable, AsyncIterable
 
 from pydantic import BaseModel
 
-from documents import Document
-from messages import BaseMessage, MessageFactory
-from model_utilities import get_tokenizer
-from responses import Completion
-from tools import Tool
+from components.documents import Document
+from components.messages import BaseMessage, MessageFactory
+from models.utilities import get_tokenizer
+from components.responses import Completion
+from components.tools import Tool
 
 
 class APIModel(ABC):

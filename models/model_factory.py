@@ -3,7 +3,7 @@ import warnings
 from models.api_model import APIModel
 from models.openai_model import OpenAIModel
 
-from model_utilities import ModelFamily, ConnectionDetails
+from models.utilities import ModelFamily, ConnectionDetails
 
 
 class ModelFactory:

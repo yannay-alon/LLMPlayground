@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import BaseModel, field_validator, ValidationInfo
 
-from tools import Tool
+from components.tools import Tool
 
 
 class ToolCall(BaseModel):

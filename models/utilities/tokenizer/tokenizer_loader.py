@@ -1,7 +1,7 @@
 from pathlib import Path
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
-from model_utilities.model_family import ModelFamily
+from models.utilities.model_family import ModelFamily
 
 __tokenizer_directory = Path(__file__).parent
 

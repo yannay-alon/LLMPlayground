@@ -1,4 +1,4 @@
-from messages.messages import (
+from components.messages.messages import (
     BaseMessage,
     UserMessage,
     SystemMessage,

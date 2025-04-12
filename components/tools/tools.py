@@ -5,7 +5,7 @@ from typing import Self, Callable, ParamSpec, TypeVar, cast, Any, Generic
 import griffe
 from pydantic import BaseModel, computed_field, TypeAdapter
 
-from tools.docstring_style import infer_docstring_style
+from components.tools.docstring_style import infer_docstring_style
 
 ToolInput = ParamSpec("ToolInput")
 ToolOutput = TypeVar("ToolOutput")

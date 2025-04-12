@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-from model_utilities.model_family import ModelFamily
+from models.utilities.model_family import ModelFamily
 
 load_dotenv()
 

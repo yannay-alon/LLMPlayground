@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from responses.choice import Choice
-from responses.usage import Usage
+from components.responses.choice import Choice
+from components.responses.usage import Usage
 
 
 class Completion(BaseModel):

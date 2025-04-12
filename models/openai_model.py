@@ -11,12 +11,12 @@ from openai.types.chat.completion_create_params import ResponseFormat
 from openai.types.shared_params.function_definition import FunctionDefinition
 from pydantic import BaseModel
 
-from documents import Document
-from messages import BaseMessage, UserMessage
+from components.documents import Document
+from components.messages import BaseMessage, UserMessage
 from models.api_model import APIModel
-from responses import Completion, Choice, ToolCall, Usage
-from responses.choice import FinishReason
-from tools import Tool
+from components.responses import Completion, Choice, ToolCall, Usage
+from components.responses.choice import FinishReason
+from components.tools import Tool
 
 
 class OpenAIModel(APIModel):

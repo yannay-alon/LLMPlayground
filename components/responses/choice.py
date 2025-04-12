@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from enum import StrEnum
 from typing import TypeVar
-from responses.tool_call import ToolCall
+from components.responses.tool_call import ToolCall
 
 ParsedType = TypeVar("ParsedType", bound=BaseModel)
 
