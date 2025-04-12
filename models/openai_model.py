@@ -12,7 +12,7 @@ from openai.types.shared_params.function_definition import FunctionDefinition
 from pydantic import BaseModel
 
 from components.documents import Document
-from components.messages import BaseMessage, UserMessage
+from components.messages import BaseMessage
 from components.responses import Completion, Choice, ToolCall, Usage
 from components.responses.choice import FinishReason
 from components.tools import Tool
@@ -100,7 +100,7 @@ class OpenAIModel(APIModel):
 
         *history, last_message = messages
 
-        messages_with_documents = history + [UserMessage(content=formatted_documents), last_message]
+        messages_with_documents = history + [BaseMessage(role="developer", content=formatted_documents), last_message]
         return messages_with_documents
 
     def _invoke(
