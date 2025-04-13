@@ -26,6 +26,40 @@ class APIModel(ABC):
         except (ValueError, OSError):
             self.tokenizer = None
 
+        self._temperature = 1
+        self._max_tokens = None
+
+    # <editor-fold desc="Hyperparameters">
+    @property
+    def temperature(self) -> float | None:
+        return self._temperature
+
+    @temperature.setter
+    def temperature(self, value: float | None):
+        if value is not None and value < 0:
+            raise ValueError("Temperature must be positive!")
+        self._temperature = value
+
+    @temperature.deleter
+    def temperature(self):
+        self._temperature = None
+
+    @property
+    def max_tokens(self) -> int | None:
+        return self._max_tokens
+
+    @max_tokens.setter
+    def max_tokens(self, value: int | None):
+        if value is not None and value <= 0:
+            raise ValueError("Max tokens must be positive!")
+        self._max_tokens = value
+
+    @max_tokens.deleter
+    def max_tokens(self):
+        self._max_tokens = None
+
+    # </editor-fold>
+
     # <editor-fold desc="Synchronous">
 
     @overload
@@ -65,9 +99,12 @@ class APIModel(ABC):
             response_format: type[BaseModel] | None = None,
             *,
             max_tokens: int | None = None,
-            temperature: float = 1,
+            temperature: float | None = None,
     ) -> Completion | Iterable[Completion]:
         loaded_messages = self._load_messages(messages)
+
+        max_tokens = max_tokens if max_tokens is not None else self.max_tokens
+        temperature = temperature if temperature is not None else self.temperature
 
         return self._invoke(
             messages=loaded_messages,
@@ -133,9 +170,12 @@ class APIModel(ABC):
             response_format: type[BaseModel] | None = None,
             *,
             max_tokens: int | None = None,
-            temperature: float = 1,
+            temperature: float | None = None,
     ) -> Completion | AsyncIterable[Completion]:
         loaded_messages = self._load_messages(messages)
+
+        max_tokens = max_tokens if max_tokens is not None else self.max_tokens
+        temperature = temperature if temperature is not None else self.temperature
 
         return await self._async_invoke(
             messages=loaded_messages,
