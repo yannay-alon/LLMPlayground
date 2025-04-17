@@ -1,13 +1,20 @@
 from abc import ABC, abstractmethod
-from typing import overload, Literal, Any, Iterable, AsyncIterable
+from typing import overload, Literal, Any, Iterable, AsyncIterable, NamedTuple
 
 from pydantic import BaseModel
 
 from components.documents import Document
 from components.messages import BaseMessage, MessageFactory
-from models.utilities import get_tokenizer
 from components.responses import Completion
 from components.tools import Tool
+from models.utilities import get_tokenizer
+
+
+class PromptCreationArguments(NamedTuple):
+    messages: list[dict[str, str]]
+    additional_tokenization_arguments: dict[str, Any]
+    tools: list[dict[str, str]] | None = None
+    documents: list[dict[str, Any]] | None = None
 
 
 class APIModel(ABC):
@@ -249,12 +256,7 @@ class APIModel(ABC):
 
         loaded_messages = self._load_messages(messages)
 
-        (
-            processed_messages,
-            processed_tools,
-            processed_documents,
-            additional_tokenization_arguments
-        ) = self._process_arguments_for_prompt_creation(
+        prompt_creation_arguments = self._process_arguments_for_prompt_creation(
             loaded_messages,
             tools,
             documents,
@@ -262,10 +264,10 @@ class APIModel(ABC):
         )
 
         tokenization_arguments = {
-            "conversation": processed_messages,
-            "tools": processed_tools,
-            "documents": processed_documents,
-            **additional_tokenization_arguments
+            "conversation": prompt_creation_arguments.messages,
+            "tools": prompt_creation_arguments.tools,
+            "documents": prompt_creation_arguments.documents,
+            **prompt_creation_arguments.additional_tokenization_arguments,
         }
 
         non_empty_tokenization_arguments = {
@@ -303,7 +305,7 @@ class APIModel(ABC):
             tools: list[Tool] | None,
             documents: list[Document] | None,
             response_format: type[BaseModel] | None
-    ) -> tuple[list[dict[str, str]], list[dict[str, str]] | None, list[dict[str, Any]] | None, dict[str, Any]]:
+    ) -> PromptCreationArguments:
         """
         Process the arguments before applying the tokenizer's apply_chat_message method
 

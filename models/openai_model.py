@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import Any, cast, Iterable, AsyncIterable
+from typing import Any, cast, Iterable, AsyncIterable, NamedTuple
 
 import httpx
 from openai import Client, AsyncClient
@@ -16,8 +16,14 @@ from components.messages import BaseMessage
 from components.responses import Completion, Choice, ToolCall, Usage
 from components.responses.choice import FinishReason
 from components.tools import Tool
-from models.api_model import APIModel
+from models.api_model import APIModel, PromptCreationArguments
 from models.utilities.json_parsing import parse_json
+
+
+class OpenAICompatibleArguments(NamedTuple):
+    messages: list[dict[str, str]]
+    tools: list[ChatCompletionToolParam] | None = None
+    response_format: ResponseFormat | None = None
 
 
 class OpenAIModel(APIModel):
@@ -113,18 +119,14 @@ class OpenAIModel(APIModel):
             max_tokens: int | None,
             temperature: float
     ) -> Completion | Iterable[Completion]:
-        (
-            dumped_messages,
-            open_ai_compatible_tools,
-            open_ai_compatible_response_format
-        ) = self._prepare_arguments(messages, tools, documents, response_format)
+        arguments = self._prepare_arguments(messages, tools, documents, response_format)
 
         response = self.client.chat.completions.create(
             model=self.model_name,
-            messages=dumped_messages,
+            messages=arguments.messages,
             stream=stream,
-            tools=open_ai_compatible_tools,
-            response_format=open_ai_compatible_response_format,
+            tools=arguments.tools,
+            response_format=arguments.response_format,
             max_tokens=max_tokens,
             temperature=temperature,
         )
@@ -167,18 +169,14 @@ class OpenAIModel(APIModel):
             max_tokens: int | None,
             temperature: float
     ) -> Completion | AsyncIterable[Completion]:
-        (
-            dumped_messages,
-            open_ai_compatible_tools,
-            open_ai_compatible_response_format
-        ) = self._prepare_arguments(messages, tools, documents, response_format)
+        arguments = self._prepare_arguments(messages, tools, documents, response_format)
 
         response = await self.async_client.chat.completions.create(
             model=self.model_name,
-            messages=dumped_messages,
+            messages=arguments.messages,
             stream=stream,
-            tools=open_ai_compatible_tools,
-            response_format=open_ai_compatible_response_format,
+            tools=arguments.tools,
+            response_format=arguments.response_format,
             max_tokens=max_tokens,
             temperature=temperature,
         )
@@ -218,7 +216,7 @@ class OpenAIModel(APIModel):
             tools: list[Tool] | None,
             documents: list[Document] | None,
             response_format: type[BaseModel] | None
-    ) -> tuple[list[dict[str, str]], list[ChatCompletionToolParam] | None, ResponseFormat | None]:
+    ) -> OpenAICompatibleArguments:
         messages_with_documents = self._add_documents_to_messages(messages, documents)
         dumped_messages = [message.model_dump(by_alias=True) for message in messages_with_documents]
         open_ai_compatible_tools = self._process_tools(tools)
@@ -233,7 +231,13 @@ class OpenAIModel(APIModel):
                 )
             )
 
-        return dumped_messages, open_ai_compatible_tools, open_ai_compatible_response_format
+        parameters = OpenAICompatibleArguments(
+            messages=dumped_messages,
+            tools=open_ai_compatible_tools,
+            response_format=open_ai_compatible_response_format
+        )
+
+        return parameters
 
     def _process_arguments_for_prompt_creation(
             self,
@@ -241,14 +245,15 @@ class OpenAIModel(APIModel):
             tools: list[Tool] | None,
             documents: list[Document] | None,
             response_format: type[BaseModel] | None
-    ) -> tuple[list[dict[str, str]], list[dict[str, str]] | None, list[dict[str, Any]] | None, dict[str, Any]]:
-        (
-            dumped_messages,
-            open_ai_compatible_tools,
-            _
-        ) = self._prepare_arguments(messages, tools, documents, response_format)
-        additional_tokenization_arguments = {}
-        return dumped_messages, open_ai_compatible_tools, None, additional_tokenization_arguments
+    ) -> PromptCreationArguments:
+        arguments = self._prepare_arguments(messages, tools, documents, response_format)
+
+        prompt_creation_arguments = PromptCreationArguments(
+            messages=arguments.messages,
+            tools=arguments.tools,
+            additional_tokenization_arguments={}
+        )
+        return prompt_creation_arguments
 
     @staticmethod
     def _build_choice(
