@@ -1,6 +1,6 @@
 ## Adding new LLMs
 
-To add a new LLM that is based on API calls, you need to inherit from `APIModel` and implement the following methods:
+To add a new LLM based on API calls, you need to inherit from `APIModel` and implement the following methods:
 
 - For LLM calling:
     - `_invoke`
@@ -13,7 +13,7 @@ Your model should be able to handle documents, tools and structured-output as in
 You can take a look in the `openai_model.py` file for an example of how to implement these methods.
 
 <u>Optional</u>:<br>
-For the prompt creation, we utilize HuggingFace's `transformers` library, specifically the `AutoTokenizer` class.
+For the prompt creation, we use HuggingFace's `transformers` library, specifically the `AutoTokenizer` class.
 To allow for automatic tokenization, you should:
 
 1. Add a directory under `models/utilities/tokenizer` with the name of your model's family.
