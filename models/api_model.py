@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from components.documents import Document
 from components.messages import BaseMessage, MessageFactory
 from components.responses import Completion
+from components.responses.choice import ParsedType
 from components.tools import Tool
 from models.utilities import get_tokenizer
 
@@ -76,11 +77,11 @@ class APIModel(ABC):
             stream: Literal[False] = False,
             tools: list[Tool] | None = None,
             documents: list[Document] | None = None,
-            response_format: type[BaseModel] | None = None,
+            response_format: type[ParsedType] | None = None,
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> Completion:
+    ) -> Completion[ParsedType]:
         ...
 
     @overload
@@ -90,11 +91,11 @@ class APIModel(ABC):
             stream: Literal[True] = True,
             tools: list[Tool] | None = None,
             documents: list[Document] | None = None,
-            response_format: type[BaseModel] | None = None,
+            response_format: type[ParsedType] | None = None,
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> Iterable[Completion]:
+    ) -> Iterable[Completion[ParsedType]]:
         ...
 
     def invoke(
@@ -103,11 +104,11 @@ class APIModel(ABC):
             stream: bool = False,
             tools: list[Tool] | None = None,
             documents: list[Document] | None = None,
-            response_format: type[BaseModel] | None = None,
+            response_format: type[ParsedType] | None = None,
             *,
             max_tokens: int | None = None,
             temperature: float | None = None,
-    ) -> Completion | Iterable[Completion]:
+    ) -> Completion[ParsedType] | Iterable[Completion[ParsedType]]:
         loaded_messages = self._load_messages(messages)
 
         max_tokens = max_tokens if max_tokens is not None else self.max_tokens
@@ -130,10 +131,10 @@ class APIModel(ABC):
             stream: bool,
             tools: list[Tool] | None,
             documents: list[Document] | None,
-            response_format: type[BaseModel] | None,
+            response_format: type[ParsedType] | None,
             max_tokens: int | None,
             temperature: float
-    ) -> Completion | Iterable[Completion]:
+    ) -> Completion[ParsedType] | Iterable[Completion[ParsedType]]:
         pass
 
     # </editor-fold>
@@ -147,11 +148,11 @@ class APIModel(ABC):
             stream: Literal[False] = False,
             tools: list[Tool] | None = None,
             documents: list[Document] | None = None,
-            response_format: type[BaseModel] | None = None,
+            response_format: type[ParsedType] | None = None,
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> Completion:
+    ) -> Completion[ParsedType]:
         ...
 
     @overload
@@ -161,11 +162,11 @@ class APIModel(ABC):
             stream: Literal[True] = True,
             tools: list[Tool] | None = None,
             documents: list[Document] | None = None,
-            response_format: type[BaseModel] | None = None,
+            response_format: type[ParsedType] | None = None,
             *,
             max_tokens: int | None = None,
             temperature: float = 1,
-    ) -> AsyncIterable[Completion]:
+    ) -> AsyncIterable[Completion[ParsedType]]:
         ...
 
     async def async_invoke(
@@ -174,11 +175,11 @@ class APIModel(ABC):
             stream: bool = False,
             tools: list[Tool] | None = None,
             documents: list[Document] | None = None,
-            response_format: type[BaseModel] | None = None,
+            response_format: type[ParsedType] | None = None,
             *,
             max_tokens: int | None = None,
             temperature: float | None = None,
-    ) -> Completion | AsyncIterable[Completion]:
+    ) -> Completion[ParsedType] | AsyncIterable[Completion[ParsedType]]:
         loaded_messages = self._load_messages(messages)
 
         max_tokens = max_tokens if max_tokens is not None else self.max_tokens
@@ -201,10 +202,10 @@ class APIModel(ABC):
             stream: bool,
             tools: list[Tool] | None,
             documents: list[Document] | None,
-            response_format: type[BaseModel] | None,
+            response_format: type[ParsedType] | None,
             max_tokens: int | None,
             temperature: float
-    ) -> Completion | AsyncIterable[Completion]:
+    ) -> Completion[ParsedType] | AsyncIterable[Completion[ParsedType]]:
         pass
 
     # </editor-fold>
