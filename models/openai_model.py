@@ -4,7 +4,7 @@ from typing import Any, cast, Iterable, AsyncIterable, NamedTuple
 
 import httpx
 from openai import Client, AsyncClient
-from openai.types.chat import ChatCompletionToolParam
+from openai.types.chat import ChatCompletionToolParam, ChatCompletionMessageParam
 from openai.types.chat.chat_completion import Choice as OpenAIChoice
 from openai.types.chat.chat_completion_chunk import Choice as OpenAIChoiceChunk
 from openai.types.chat.completion_create_params import ResponseFormat
@@ -21,7 +21,7 @@ from models.utilities.json_parsing import parse_json
 
 
 class OpenAICompatibleArguments(NamedTuple):
-    messages: list[dict[str, str]]
+    messages: list[ChatCompletionMessageParam]
     tools: list[ChatCompletionToolParam] | None = None
     response_format: ResponseFormat | None = None
 
@@ -147,7 +147,7 @@ class OpenAIModel(APIModel):
         else:
             def streaming_generator() -> Iterable[Completion]:
                 for chunk in response:
-                    choices = [
+                    stream_choices = [
                         self._build_choice(
                             choice,
                             response_format=None,  # No support for structured output in streaming mode
@@ -155,7 +155,7 @@ class OpenAIModel(APIModel):
                         )
                         for choice in chunk.choices
                     ]
-                    yield Completion(choices=choices, usage=None)
+                    yield Completion(choices=stream_choices, usage=None)
 
             return streaming_generator()
 
@@ -198,7 +198,7 @@ class OpenAIModel(APIModel):
         else:
             async def streaming_generator() -> AsyncIterable[Completion]:
                 async for chunk in response:
-                    choices = [
+                    stream_choices = [
                         self._build_choice(
                             choice,
                             response_format=None,  # No support for structured output in streaming mode
@@ -206,7 +206,7 @@ class OpenAIModel(APIModel):
                         )
                         for choice in chunk.choices
                     ]
-                    yield Completion(choices=choices, usage=None)
+                    yield Completion(choices=stream_choices, usage=None)
 
             return streaming_generator()
 
@@ -232,7 +232,7 @@ class OpenAIModel(APIModel):
             )
 
         parameters = OpenAICompatibleArguments(
-            messages=dumped_messages,
+            messages=cast(list[ChatCompletionMessageParam], dumped_messages),
             tools=open_ai_compatible_tools,
             response_format=open_ai_compatible_response_format
         )
@@ -249,7 +249,7 @@ class OpenAIModel(APIModel):
         arguments = self._prepare_arguments(messages, tools, documents, response_format)
 
         prompt_creation_arguments = PromptCreationArguments(
-            messages=arguments.messages,
+            messages=cast(list[dict], arguments.messages),
             tools=arguments.tools,
             additional_tokenization_arguments={}
         )
