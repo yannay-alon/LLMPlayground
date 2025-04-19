@@ -1,5 +1,5 @@
 from pydantic import BaseModel, TypeAdapter
-from typing import TypeVar
+from typing import TypeVar, List
 
 OutputType = TypeVar("OutputType", bound=BaseModel)
 
@@ -16,5 +16,5 @@ def parse_json(json_string: str, output_type: type[OutputType]) -> OutputType:
 
 def parse_json_array(json_string: str, output_type: type[OutputType]) -> list[OutputType]:
     cleaned_json = clean_json_string(json_string)
-    multiple_outputs_type = TypeAdapter(list[output_type])
+    multiple_outputs_type = TypeAdapter(List[output_type])
     return multiple_outputs_type.validate_json(cleaned_json)
