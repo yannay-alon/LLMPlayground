@@ -1,9 +1,16 @@
 import concurrent.futures
-from typing import Callable, TypeVar, ParamSpec, Sequence, Hashable, Generic
+from typing import Callable, TypeVar, ParamSpec, Sequence, Generic, Protocol
+
+
+class SupportsEquality(Protocol):
+    def __eq__(self, other: object) -> bool:
+        pass
+
 
 PREDICATE_INPUT = ParamSpec("PREDICATE_INPUT")
-PREDICATE_OUTPUT = TypeVar("PREDICATE_OUTPUT", bound=Hashable)
+PREDICATE_OUTPUT = TypeVar("PREDICATE_OUTPUT", bound=SupportsEquality)
 OUTCOME_OUTPUT = TypeVar("OUTCOME_OUTPUT")
+
 
 class SpeculativeException(ValueError, Generic[PREDICATE_OUTPUT]):
     def __init__(self, message: str, predicate_output: PREDICATE_OUTPUT):
@@ -48,18 +55,20 @@ def speculative_execution(
     try:
         predicate_future = executor.submit(predicate, *predicate_args, **predicate_kwargs)
 
-        outcome_outputs = {
-            outcome_input: executor.submit(outcome, outcome_input)
+        outcome_outputs = [
+            executor.submit(outcome, outcome_input)
             for outcome_input in outcome_inputs
-        }
+        ]
 
         predicate_output = predicate_future.result()
 
-        for outcome_input, outcome_future in outcome_outputs.items():
-            if predicate_output != outcome_input:
+        matching_outcome_future = None
+        for outcome_input, outcome_future in zip(outcome_inputs, outcome_outputs):
+            if predicate_output == outcome_input:
+                matching_outcome_future = outcome_future
+            else:
                 outcome_future.cancel()
 
-        matching_outcome_future = outcome_outputs.get(predicate_output)
         if matching_outcome_future is None:
             if use_predicate_output:
                 return outcome(predicate_output)
