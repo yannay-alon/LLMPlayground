@@ -1,5 +1,5 @@
 import concurrent.futures
-from typing import Callable, TypeVar, ParamSpec, Sequence, Generic, Protocol
+from typing import Callable, TypeVar, ParamSpec, Sequence, Generic, Protocol, Coroutine
 
 
 class SupportsEquality(Protocol):
@@ -79,5 +79,29 @@ def speculative_execution(
                 )
         else:
             return matching_outcome_future.result()
+    finally:
+        executor.shutdown(wait=False)
+
+
+COROUTINE_INPUT = ParamSpec("COROUTINE_INPUT")
+COROUTINE_OUTPUT = TypeVar("COROUTINE_OUTPUT", bound=Coroutine)
+
+
+def background_execution(
+        coroutine: Callable[COROUTINE_INPUT, COROUTINE_OUTPUT],
+        *args: COROUTINE_INPUT.args,
+        **kwargs: COROUTINE_INPUT.kwargs,
+) -> None:
+    """
+    Run a coroutine in the background in a separate thread.
+    This function does not wait for the coroutine to finish.
+
+    :param coroutine: The coroutine function to be executed.
+    :param args: The arguments to be passed to the coroutine function.
+    :param kwargs: The keyword arguments to be passed to the coroutine function.
+    """
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    try:
+        executor.submit(coroutine, *args, **kwargs)
     finally:
         executor.shutdown(wait=False)
