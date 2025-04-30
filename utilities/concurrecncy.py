@@ -2,6 +2,12 @@ import concurrent.futures
 from typing import Callable, TypeVar, ParamSpec, Sequence, Generic, Protocol, Coroutine
 
 
+__all__ = [
+    "SpeculativeError",
+    "speculative_execution",
+    "background_execution",
+]
+
 class SupportsEquality(Protocol):
     def __eq__(self, other: object) -> bool:
         pass
