@@ -12,7 +12,7 @@ PREDICATE_OUTPUT = TypeVar("PREDICATE_OUTPUT", bound=SupportsEquality)
 OUTCOME_OUTPUT = TypeVar("OUTCOME_OUTPUT")
 
 
-class SpeculativeException(ValueError, Generic[PREDICATE_OUTPUT]):
+class SpeculativeError(KeyError, Generic[PREDICATE_OUTPUT]):
     def __init__(self, message: str, predicate_output: PREDICATE_OUTPUT):
         super().__init__(message)
         self.predicate_output = predicate_output
@@ -73,7 +73,7 @@ def speculative_execution(
             if use_predicate_output:
                 return outcome(predicate_output)
             else:
-                raise SpeculativeException(
+                raise SpeculativeError(
                     f"Predicate output {predicate_output} not found in outcome inputs.",
                     predicate_output,
                 )
