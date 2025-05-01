@@ -2,7 +2,7 @@ import uuid
 import warnings
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class BaseMessage(BaseModel):
@@ -23,6 +23,8 @@ class AssistantMessage(BaseMessage):
 
 
 class ToolMessage(BaseMessage):
+    model_config = ConfigDict(populate_by_name=True)
+
     role: Literal["tool"] = "tool"
     identifier: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="id")
 
