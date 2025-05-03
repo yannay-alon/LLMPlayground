@@ -15,8 +15,9 @@ class ConnectionDetails:
         return api_key
 
     @staticmethod
-    def get_base_url(model_name: str, provider: str = "default") -> str:
+    def get_base_url(model_name: str, provider: str = "DEFAULT") -> str:
         model_family = ModelFamily.infer_family(model_name)
+        provider = provider.upper()
 
         base_url = os.getenv(f"{ConnectionDetails._normalize_model_family(model_family)}_{provider}_BASE_URL")
         return base_url
