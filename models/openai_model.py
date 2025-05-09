@@ -59,17 +59,17 @@ class OpenAIModel(APIModel):
 
     def _process_tools(
             self,
-            tools: list[Tool] | None,
+            tools: dict[str, Tool] | None,
     ) -> list[ChatCompletionToolParam] | None:
         if tools is None:
             return None
 
         open_ai_compatible_tools = []
-        for tool in tools:
+        for tool_name, tool in tools.items():
             open_ai_compatible_tools.append(
                 ChatCompletionToolParam(
                     function=FunctionDefinition(
-                        name=tool.name,
+                        name=tool_name,
                         description=tool.description,
                         parameters={
                             "type": "object",
@@ -113,7 +113,7 @@ class OpenAIModel(APIModel):
             self,
             messages: list[BaseMessage],
             stream: bool,
-            tools: list[Tool] | None,
+            tools: dict[str, Tool] | None,
             documents: list[Document] | None,
             response_format: type[BaseModel] | None,
             max_tokens: int | None,
@@ -163,7 +163,7 @@ class OpenAIModel(APIModel):
             self,
             messages: list[BaseMessage],
             stream: bool,
-            tools: list[Tool] | None,
+            tools: dict[str, Tool] | None,
             documents: list[Document] | None,
             response_format: type[BaseModel] | None,
             max_tokens: int | None,
@@ -213,7 +213,7 @@ class OpenAIModel(APIModel):
     def _prepare_arguments(
             self,
             messages: list[BaseMessage],
-            tools: list[Tool] | None,
+            tools: dict[str, Tool] | None,
             documents: list[Document] | None,
             response_format: type[BaseModel] | None
     ) -> OpenAICompatibleArguments:
@@ -242,7 +242,7 @@ class OpenAIModel(APIModel):
     def _process_arguments_for_prompt_creation(
             self,
             messages: list[BaseMessage],
-            tools: list[Tool] | None,
+            tools: dict[str, Tool] | None,
             documents: list[Document] | None,
             response_format: type[BaseModel] | None
     ) -> PromptCreationArguments:
@@ -259,7 +259,7 @@ class OpenAIModel(APIModel):
     def _build_choice(
             choice: OpenAIChoice | OpenAIChoiceChunk,
             response_format: type[BaseModel] | None = None,
-            tools: list[Tool] | None = None
+            tools: dict[str, Tool] | None = None
     ) -> Choice:
         if choice.finish_reason is None:
             finish_reason = FinishReason.NONE

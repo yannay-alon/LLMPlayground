@@ -36,6 +36,25 @@ class APIModel(ABC):
 
         self._temperature = 1
         self._max_tokens = None
+        self._registered_tools = dict()
+
+    def register_tool(self, tool: Tool):
+        assert all(
+            tool.name != registered_tool_name
+            for registered_tool_name in self._registered_tools
+        ), "Tool with the same name already registered."
+        self._registered_tools[tool.name] = tool
+
+    @property
+    def tools(self) -> dict[str, Tool]:
+        return self._registered_tools
+
+    def remove_tools(self, tool_name: str):
+        if tool_name in self._registered_tools:
+            self._registered_tools.pop(tool_name)
+        else:
+            raise ValueError(f"Tool '{tool_name}' not found in registered tools.")
+
 
     # <editor-fold desc="Hyperparameters">
     @property
@@ -75,7 +94,7 @@ class APIModel(ABC):
             self,
             messages: list[BaseMessage] | list[dict[str, str]],
             stream: Literal[False] = False,
-            tools: list[Tool] | None = None,
+            tools: dict[str, Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -89,7 +108,7 @@ class APIModel(ABC):
             self,
             messages: list[BaseMessage] | list[dict[str, str]],
             stream: Literal[True] = True,
-            tools: list[Tool] | None = None,
+            tools: dict[str, Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -102,7 +121,7 @@ class APIModel(ABC):
             self,
             messages: list[BaseMessage | dict[str, str]],
             stream: bool = False,
-            tools: list[Tool] | None = None,
+            tools: dict[str, Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -117,7 +136,7 @@ class APIModel(ABC):
         return self._invoke(
             messages=loaded_messages,
             stream=stream,
-            tools=tools,
+            tools=self._registered_tools | tools,
             documents=documents,
             response_format=response_format,
             max_tokens=max_tokens,
@@ -129,7 +148,7 @@ class APIModel(ABC):
             self,
             messages: list[BaseMessage],
             stream: bool,
-            tools: list[Tool] | None,
+            tools: dict[str, Tool] | None,
             documents: list[Document] | None,
             response_format: type[ParsedType] | None,
             max_tokens: int | None,
@@ -146,7 +165,7 @@ class APIModel(ABC):
             self,
             messages: list[BaseMessage] | list[dict[str, str]],
             stream: Literal[False] = False,
-            tools: list[Tool] | None = None,
+            tools: dict[str, Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -160,7 +179,7 @@ class APIModel(ABC):
             self,
             messages: list[BaseMessage] | list[dict[str, str]],
             stream: Literal[True] = True,
-            tools: list[Tool] | None = None,
+            tools: dict[str, Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -173,7 +192,7 @@ class APIModel(ABC):
             self,
             messages: list[BaseMessage | dict[str, str]],
             stream: bool = False,
-            tools: list[Tool] | None = None,
+            tools: dict[str, Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -188,7 +207,7 @@ class APIModel(ABC):
         return await self._async_invoke(
             messages=loaded_messages,
             stream=stream,
-            tools=tools,
+            tools=self._registered_tools | tools,
             documents=documents,
             response_format=response_format,
             max_tokens=max_tokens,
@@ -200,7 +219,7 @@ class APIModel(ABC):
             self,
             messages: list[BaseMessage],
             stream: bool,
-            tools: list[Tool] | None,
+            tools: dict[str, Tool] | None,
             documents: list[Document] | None,
             response_format: type[ParsedType] | None,
             max_tokens: int | None,
@@ -216,7 +235,7 @@ class APIModel(ABC):
     def create_prompt(
             self,
             messages: list[BaseMessage | dict[str, str]],
-            tools: list[Tool] | None = None,
+            tools: dict[str, Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[BaseModel] | None = None,
             *,
@@ -230,7 +249,7 @@ class APIModel(ABC):
     def create_prompt(
             self,
             messages: list[BaseMessage | dict[str, str]],
-            tools: list[Tool] | None = None,
+            tools: dict[str, Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[BaseModel] | None = None,
             *,
@@ -243,7 +262,7 @@ class APIModel(ABC):
     def create_prompt(
             self,
             messages: list[BaseMessage | dict[str, str]],
-            tools: list[Tool] | None = None,
+            tools: dict[str, Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[BaseModel] | None = None,
             *,
@@ -259,7 +278,7 @@ class APIModel(ABC):
 
         prompt_creation_arguments = self._process_arguments_for_prompt_creation(
             loaded_messages,
-            tools,
+            self._registered_tools | tools,
             documents,
             response_format
         )
@@ -303,7 +322,7 @@ class APIModel(ABC):
     def _process_arguments_for_prompt_creation(
             self,
             messages: list[BaseMessage],
-            tools: list[Tool] | None,
+            tools: dict[str, Tool] | None,
             documents: list[Document] | None,
             response_format: type[BaseModel] | None
     ) -> PromptCreationArguments:
