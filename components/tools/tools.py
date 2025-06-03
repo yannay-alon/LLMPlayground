@@ -68,6 +68,7 @@ class Tool(BaseModel, Generic[ToolInput, ToolOutput]):
                 arguments=tool.arguments,
                 function=tool.function,
             )
+            self._empty_parameters_count = tool._empty_parameters_count
         else:
             super().__init__(**kwargs)
 
