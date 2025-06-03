@@ -3,7 +3,7 @@ from copy import deepcopy
 from typing import Self, Callable, ParamSpec, TypeVar, cast, Any, Generic
 
 import griffe
-from pydantic import BaseModel, computed_field, TypeAdapter
+from pydantic import BaseModel, computed_field, TypeAdapter, PrivateAttr
 
 from components.tools.docstring_style import infer_docstring_style
 
@@ -28,6 +28,9 @@ class Tool(BaseModel, Generic[ToolInput, ToolOutput]):
     description: str
     arguments: list[Argument]
     function: Callable[ToolInput, ToolOutput]
+
+    # Used to handle self or cls parameters in class methods which will be ignored
+    _empty_parameters_count: int = PrivateAttr(default=0)
 
     def __init__(self, *args, **kwargs):
         # Check whether this is used as a decorator
@@ -98,6 +101,13 @@ class Tool(BaseModel, Generic[ToolInput, ToolOutput]):
 
     @classmethod
     def from_class(cls, functional_class: type | Self) -> Self:
+        """
+        Create a Tool instance from a class that implements the __call__ method.
+        Note, the __call__ method should not use `self` or `cls` parameters, as they will be ignored.
+
+        :param functional_class: The class to create a Tool from.
+        :return: The Tool instance created from the class.
+        """
         if issubclass(functional_class, cls):
             return deepcopy(functional_class)
 
@@ -107,9 +117,11 @@ class Tool(BaseModel, Generic[ToolInput, ToolOutput]):
         call_signature = inspect.signature(functional_class.__call__)
         _, call_arguments_descriptions = documentation_descriptions(functional_class.__call__, call_signature)
 
+        empty_parameters = 0
         arguments = []
         for parameter in call_signature.parameters.values():
             if parameter.name in {"self", "cls"}:
+                empty_parameters += 1
                 continue
 
             argument_description = call_arguments_descriptions.get(parameter.name, "")
@@ -123,14 +135,17 @@ class Tool(BaseModel, Generic[ToolInput, ToolOutput]):
                 )
             )
 
-        return cls(
+        tool = cls(
             name=functional_class.__name__,
             description=class_description,
             arguments=arguments,
             function=functional_class.__call__,
         )
+        tool._empty_parameters_count = empty_parameters
+        return tool
 
     def __call__(self, *args: ToolInput.args, **kwargs: ToolInput.kwargs) -> ToolOutput:
+        args = (None,) * self._empty_parameters_count + args
         return self.function(*args, **kwargs)
 
 
