@@ -1,5 +1,5 @@
 import concurrent.futures
-from typing import Callable, TypeVar, ParamSpec, Sequence, Generic, Protocol, Coroutine
+from typing import Callable, TypeVar, ParamSpec, Sequence, Generic, Protocol, Coroutine, Any
 
 
 __all__ = [
@@ -9,12 +9,12 @@ __all__ = [
 ]
 
 class SupportsEquality(Protocol):
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         pass
 
 
 PREDICATE_INPUT = ParamSpec("PREDICATE_INPUT")
-PREDICATE_OUTPUT = TypeVar("PREDICATE_OUTPUT", bound=SupportsEquality)
+PREDICATE_OUTPUT = TypeVar("PREDICATE_OUTPUT", bound=SupportsEquality | None)
 OUTCOME_OUTPUT = TypeVar("OUTCOME_OUTPUT")
 
 
