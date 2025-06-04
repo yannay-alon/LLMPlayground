@@ -251,7 +251,6 @@ class OpenAIModel(APIModel):
         prompt_creation_arguments = PromptCreationArguments(
             messages=cast(list[dict], arguments.messages),
             tools=arguments.tools,
-            additional_tokenization_arguments={}
         )
         return prompt_creation_arguments
 

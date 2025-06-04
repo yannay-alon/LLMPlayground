@@ -1,6 +1,6 @@
+import asyncio
 import concurrent.futures
-from typing import Callable, TypeVar, ParamSpec, Sequence, Generic, Protocol, Coroutine
-
+from typing import Callable, TypeVar, ParamSpec, Sequence, Generic, Protocol, Coroutine, Any
 
 __all__ = [
     "SpeculativeError",
@@ -8,13 +8,14 @@ __all__ = [
     "background_execution",
 ]
 
+
 class SupportsEquality(Protocol):
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         pass
 
 
 PREDICATE_INPUT = ParamSpec("PREDICATE_INPUT")
-PREDICATE_OUTPUT = TypeVar("PREDICATE_OUTPUT", bound=SupportsEquality)
+PREDICATE_OUTPUT = TypeVar("PREDICATE_OUTPUT", bound=SupportsEquality | None)
 OUTCOME_OUTPUT = TypeVar("OUTCOME_OUTPUT")
 
 
@@ -106,8 +107,26 @@ def background_execution(
     :param args: The arguments to be passed to the coroutine function.
     :param kwargs: The keyword arguments to be passed to the coroutine function.
     """
+    if not asyncio.iscoroutinefunction(coroutine):
+        raise TypeError("The provided function must be a coroutine function.")
+
+    async def run_coroutine():
+        await coroutine(*args, **kwargs)
+
+    def run_in_thread():
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(run_coroutine())
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(run_coroutine())
+            finally:
+                loop.close()
+
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
     try:
-        executor.submit(coroutine, *args, **kwargs)
+        executor.submit(run_in_thread)
     finally:
         executor.shutdown(wait=False)

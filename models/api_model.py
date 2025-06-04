@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import overload, Literal, Any, Iterable, AsyncIterable, NamedTuple
+from typing import overload, Literal, Any, Iterable, AsyncIterable
+from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 
@@ -11,9 +12,10 @@ from components.tools import Tool
 from models.utilities import get_tokenizer
 
 
-class PromptCreationArguments(NamedTuple):
+@dataclass
+class PromptCreationArguments:
     messages: list[dict[str, str]]
-    additional_tokenization_arguments: dict[str, Any]
+    additional_tokenization_arguments: dict[str, Any] = field(default_factory=dict)
     tools: list[dict[str, str]] | None = None
     documents: list[dict[str, Any]] | None = None
 
@@ -133,10 +135,13 @@ class APIModel(ABC):
         max_tokens = max_tokens if max_tokens is not None else self.max_tokens
         temperature = temperature if temperature is not None else self.temperature
 
+        if tools is not None:
+            tools = self._registered_tools | tools
+
         return self._invoke(
             messages=loaded_messages,
             stream=stream,
-            tools=self._registered_tools | tools,
+            tools=tools,
             documents=documents,
             response_format=response_format,
             max_tokens=max_tokens,
@@ -204,10 +209,13 @@ class APIModel(ABC):
         max_tokens = max_tokens if max_tokens is not None else self.max_tokens
         temperature = temperature if temperature is not None else self.temperature
 
+        if tools is not None:
+            tools = self._registered_tools | tools
+
         return await self._async_invoke(
             messages=loaded_messages,
             stream=stream,
-            tools=self._registered_tools | tools,
+            tools=tools,
             documents=documents,
             response_format=response_format,
             max_tokens=max_tokens,
@@ -276,9 +284,12 @@ class APIModel(ABC):
 
         loaded_messages = self._load_messages(messages)
 
+        if tools is not None:
+            tools = self._registered_tools | tools
+
         prompt_creation_arguments = self._process_arguments_for_prompt_creation(
             loaded_messages,
-            self._registered_tools | tools,
+            tools,
             documents,
             response_format
         )
