@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import overload, Literal, Any, Iterable, AsyncIterable, NamedTuple
+from dataclasses import dataclass, field
 
 from pydantic import BaseModel
 
@@ -11,9 +12,10 @@ from components.tools import Tool
 from models.utilities import get_tokenizer
 
 
-class PromptCreationArguments(NamedTuple):
+@dataclass
+class PromptCreationArguments:
     messages: list[dict[str, str]]
-    additional_tokenization_arguments: dict[str, Any]
+    additional_tokenization_arguments: dict[str, Any] = field(default_factory=dict)
     tools: list[dict[str, str]] | None = None
     documents: list[dict[str, Any]] | None = None
 

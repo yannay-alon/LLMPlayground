@@ -22,6 +22,6 @@ To allow for automatic tokenization, you should:
 
 If you do not add the tokenizer, the `create_prompt` method will not be available.
 
-It is recommended to use a `NamedTuple` to define the LLM-compatible arguments. <br>
+It is recommended to use a `Dataclass` or a `NamedTuple` to define the LLM-compatible arguments. <br>
 This allows for an intermediate step between the provider-agnostic arguments and the provider-specific arguments. <br>
 This will help in creating a clean interface for the LLM and make it easier to manage the arguments.
