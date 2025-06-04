@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import overload, Literal, Any, Iterable, AsyncIterable, NamedTuple
+from typing import overload, Literal, Any, Iterable, AsyncIterable
 from dataclasses import dataclass, field
 
 from pydantic import BaseModel
