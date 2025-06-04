@@ -135,10 +135,13 @@ class APIModel(ABC):
         max_tokens = max_tokens if max_tokens is not None else self.max_tokens
         temperature = temperature if temperature is not None else self.temperature
 
+        if tools is not None:
+            tools = self._registered_tools | tools
+
         return self._invoke(
             messages=loaded_messages,
             stream=stream,
-            tools=self._registered_tools | tools,
+            tools=tools,
             documents=documents,
             response_format=response_format,
             max_tokens=max_tokens,
@@ -206,10 +209,13 @@ class APIModel(ABC):
         max_tokens = max_tokens if max_tokens is not None else self.max_tokens
         temperature = temperature if temperature is not None else self.temperature
 
+        if tools is not None:
+            tools = self._registered_tools | tools
+
         return await self._async_invoke(
             messages=loaded_messages,
             stream=stream,
-            tools=self._registered_tools | tools,
+            tools=tools,
             documents=documents,
             response_format=response_format,
             max_tokens=max_tokens,
@@ -278,9 +284,12 @@ class APIModel(ABC):
 
         loaded_messages = self._load_messages(messages)
 
+        if tools is not None:
+            tools = self._registered_tools | tools
+
         prompt_creation_arguments = self._process_arguments_for_prompt_creation(
             loaded_messages,
-            self._registered_tools | tools,
+            tools,
             documents,
             response_format
         )
