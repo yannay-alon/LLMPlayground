@@ -5,7 +5,7 @@ from models import ModelFactory
 
 class TestModelFactory:
     def test_model_creation(self, mocker: Any) -> None:
-        mock_connection_details = mocker.patch("models.utilities.ConnectionDetails")
+        mock_connection_details = mocker.patch("models.model_factory.ConnectionDetails")
         mock_connection_details.get_api_key.return_value = "default-key"
         mock_connection_details.get_base_url.return_value = "default-url"
 
