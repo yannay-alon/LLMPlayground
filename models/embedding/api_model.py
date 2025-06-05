@@ -25,7 +25,6 @@ class APIModel(ABC):
     ) -> list[list[float]]:
         ...
 
-    @abstractmethod
     def embed(
             self,
             text: str | list[str],
