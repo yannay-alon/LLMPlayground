@@ -1,6 +1,6 @@
 from typing import Any
 
-from models import ModelFactory
+from models.generation import ModelFactory
 
 
 class TestModelFactory:
