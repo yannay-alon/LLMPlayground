@@ -38,6 +38,14 @@ class APIModel(ABC):
         :param output_dimensions: The desired output dimensions of the embedding.
         :return: The embedding of the text.
         """
+        return self._embed(text, output_dimensions)
+
+    @abstractmethod
+    def _embed(
+            self,
+            text: str | list[str],
+            output_dimensions: int | None = None,
+    ) -> list[float] | list[list[float]]:
         pass
 
     # </editor-fold>
@@ -59,7 +67,6 @@ class APIModel(ABC):
     ) -> list[list[float]]:
         ...
 
-    @abstractmethod
     async def async_embed(
             self,
             text: str | list[str],
@@ -72,5 +79,13 @@ class APIModel(ABC):
         :param output_dimensions: The desired output dimensions of the embedding.
         :return: The embedding of the text.
         """
+        return await self._async_embed(text, output_dimensions)
+
+    @abstractmethod
+    async def _async_embed(
+            self,
+            text: str | list[str],
+            output_dimensions: int | None = None,
+    ) -> list[float] | list[list[float]]:
         pass
     # </editor-fold>
