@@ -15,8 +15,6 @@ class TestOpenAIModel:
     @pytest.fixture
     def mock_client(self, mocker) -> Client:
         client = mocker.Mock()
-        client.chat = mocker.Mock()
-        client.chat.completions = mocker.Mock()
         client.http_client = httpx.Client()
         mocker.patch("models.generation.openai_model.Client", return_value=client)
         return client
@@ -24,8 +22,6 @@ class TestOpenAIModel:
     @pytest.fixture
     def mock_async_client(self, mocker) -> AsyncClient:
         client = mocker.AsyncMock()
-        client.chat = mocker.AsyncMock()
-        client.chat.completions = mocker.AsyncMock()
         client.http_client = httpx.AsyncClient()
         mocker.patch("models.generation.openai_model.AsyncClient", return_value=client)
         return client
