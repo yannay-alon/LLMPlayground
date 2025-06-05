@@ -40,6 +40,8 @@ class APIModel(ABC):
         self._max_tokens = None
         self._registered_tools = dict()
 
+    # <editor-fold desc="Tools Management">
+
     def register_tool(self, tool: Tool):
         assert all(
             tool.name != registered_tool_name
@@ -57,6 +59,7 @@ class APIModel(ABC):
         else:
             raise ValueError(f"Tool '{tool_name}' not found in registered tools.")
 
+    # </editor-fold>
 
     # <editor-fold desc="Hyperparameters">
     @property
