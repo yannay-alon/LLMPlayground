@@ -1,7 +1,7 @@
 import warnings
 
-from models.api_model import APIModel
-from models.openai_model import OpenAIModel
+from models.generation.api_model import APIModel
+from models.generation.openai_model import OpenAIModel
 
 from models.utilities import ModelFamily, ConnectionDetails
 

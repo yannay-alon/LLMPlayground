@@ -8,7 +8,7 @@ from components.messages import UserMessage, SystemMessage, BaseMessage
 from components.responses import Completion
 from components.responses.choice import ParsedType
 from components.tools import Tool
-from models.api_model import APIModel, PromptCreationArguments
+from models.generation.api_model import APIModel, PromptCreationArguments
 
 
 class TestAPIModel:
@@ -62,7 +62,7 @@ class TestAPIModel:
         return ConcreteAPIModel
 
     def test_model_initialization(self, mocker: Any, concrete_api_model) -> None:
-        mock_tokenizer = mocker.patch("models.api_model.get_tokenizer")
+        mock_tokenizer = mocker.patch("models.generation.api_model.get_tokenizer")
         model = concrete_api_model("test-model", "test-key", "test-url")
 
         assert model.model_name == "test-model"
@@ -71,7 +71,7 @@ class TestAPIModel:
         assert mock_tokenizer.called
 
     def test_tokenizer_failure_handling(self, mocker: Any, concrete_api_model) -> None:
-        mocker.patch("models.api_model.get_tokenizer", side_effect=ValueError)
+        mocker.patch("models.generation.api_model.get_tokenizer", side_effect=ValueError)
         model = concrete_api_model("test-model")
         assert model.tokenizer is None
 

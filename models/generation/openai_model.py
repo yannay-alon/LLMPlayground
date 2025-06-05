@@ -16,7 +16,7 @@ from components.messages import BaseMessage
 from components.responses import Completion, Choice, ToolCall, Usage
 from components.responses.choice import FinishReason
 from components.tools import Tool
-from models.api_model import APIModel, PromptCreationArguments
+from models.generation.api_model import APIModel, PromptCreationArguments
 from models.utilities.json_parsing import parse_json
 
 
