@@ -56,7 +56,7 @@ class OpenAIModel(APIModel):
             text: str | list[str],
             output_dimensions: int | None = None
     ) -> list[float] | list[list[float]]:
-        response = await self.client.embeddings.create(
+        response = await self.async_client.embeddings.create(
             model=self.model_name,
             input=text,
             dimensions=output_dimensions
