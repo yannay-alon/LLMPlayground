@@ -65,8 +65,8 @@ class OpenAIModel(APIModel):
         is_batched = not isinstance(text, str)
         return self._extract_embedding(response, is_batched)
 
+    @staticmethod
     def _extract_embedding(
-            self,
             response: CreateEmbeddingResponse,
             is_batched: bool
     ) -> list[float] | list[list[float]]:
