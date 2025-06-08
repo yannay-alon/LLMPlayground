@@ -15,7 +15,7 @@ class RateLimitException(Exception):
         self.remaining_period = remaining_period
 
 
-class RateLimitDecorator:
+class RateLimiter:
     def __init__(self, calls: int = 15, period: float = 900, clock: Callable[[], float] | None = None):
         self.clamped_calls = max(1, min(sys.maxsize, calls))
         self.period = period
