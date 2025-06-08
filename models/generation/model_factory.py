@@ -15,14 +15,15 @@ class ModelFactory:
             model_name: str,
             api_key: str | None = None,
             base_url: str | None = None,
+            provider: str | None = None,
             *,
             silent: bool = True,
             **kwargs,
     ) -> APIModel:
         if api_key is None:
-            api_key = ConnectionDetails.get_api_key(model_name)
+            api_key = ConnectionDetails.get_api_key(model_name, provider=provider)
         if base_url is None:
-            base_url = ConnectionDetails.get_base_url(model_name)
+            base_url = ConnectionDetails.get_base_url(model_name, provider=provider)
 
         model_family = ModelFamily.infer_family(model_name)
 
