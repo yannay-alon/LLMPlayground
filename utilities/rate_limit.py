@@ -21,7 +21,7 @@ class RateLimiter:
         self.period = period
         self.clock = clock if clock is not None else time.perf_counter
 
-        self.last_reset = clock()
+        self.last_reset = self.clock()
         self.num_calls = 0
 
         self.lock = threading.RLock()
