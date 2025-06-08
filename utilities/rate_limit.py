@@ -1,3 +1,4 @@
+import asyncio
 from functools import wraps
 
 import time
@@ -27,8 +28,7 @@ class RateLimiter:
         self.lock = threading.RLock()
 
     def __call__(self, function: Callable[INPUT, OUTPUT]) -> Callable[INPUT, OUTPUT]:
-        @wraps(function)
-        def wrapper(*args: INPUT.args, **kwargs: INPUT.kwargs) -> OUTPUT:
+        def raise_on_rate_limit() -> None:
             with self.lock:
                 remaining_period = self.__remaining_period()
 
@@ -41,7 +41,20 @@ class RateLimiter:
                 if self.num_calls > self.clamped_calls:
                     raise RateLimitException("too many calls", remaining_period)
 
+        @wraps(function)
+        def sync_wrapper(*args: INPUT.args, **kwargs: INPUT.kwargs) -> OUTPUT:
+            raise_on_rate_limit()
             return function(*args, **kwargs)
+
+        @wraps(function)
+        async def async_wrapper(*args: INPUT.args, **kwargs: INPUT.kwargs) -> OUTPUT:
+            raise_on_rate_limit()
+            return await function(*args, **kwargs)
+
+        if asyncio.iscoroutinefunction(function):
+            wrapper = async_wrapper
+        else:
+            wrapper = sync_wrapper
 
         return wrapper
 
@@ -52,11 +65,23 @@ class RateLimiter:
 
 def sleep_and_retry(function: Callable[INPUT, OUTPUT]) -> Callable[INPUT, OUTPUT]:
     @wraps(function)
-    def wrapper(*args: INPUT.args, **kwargs: INPUT.kwargs) -> OUTPUT:
+    def sync_wrapper(*args: INPUT.args, **kwargs: INPUT.kwargs) -> OUTPUT:
         while True:
             try:
                 return function(*args, **kwargs)
             except RateLimitException as exception:
                 time.sleep(exception.remaining_period)
 
+    @wraps(function)
+    async def async_wrapper(*args: INPUT.args, **kwargs: INPUT.kwargs) -> OUTPUT:
+        while True:
+            try:
+                return await function(*args, **kwargs)
+            except RateLimitException as exception:
+                await asyncio.sleep(exception.remaining_period)
+
+    if asyncio.iscoroutinefunction(function):
+        wrapper = async_wrapper
+    else:
+        wrapper = sync_wrapper
     return wrapper
