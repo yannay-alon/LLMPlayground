@@ -1,15 +1,16 @@
 import json
 from collections import defaultdict
-from typing import Any, cast, Iterable, AsyncIterable, NamedTuple
+from typing import Any, cast, Iterable, AsyncIterable
 
 import httpx
-from openai import Client, AsyncClient
+from openai import Client, AsyncClient, NotGiven
 from openai.types.chat import ChatCompletionToolParam, ChatCompletionMessageParam
 from openai.types.chat.chat_completion import Choice as OpenAIChoice
 from openai.types.chat.chat_completion_chunk import Choice as OpenAIChoiceChunk
-from openai.types.chat.completion_create_params import ResponseFormat
+from openai.types.shared_params import ResponseFormatJSONSchema
 from openai.types.shared_params.function_definition import FunctionDefinition
-from pydantic import BaseModel
+from openai.types.shared_params.response_format_json_schema import JSONSchema
+from pydantic import BaseModel, ConfigDict
 
 from components.documents import Document
 from components.messages import BaseMessage
@@ -18,12 +19,15 @@ from components.responses.choice import FinishReason
 from components.tools import Tool
 from models.generation.api_model import APIModel, PromptCreationArguments
 from models.utilities.json_parsing import parse_json
+from utilities.pydantic_utilities import make_strict_model
 
 
-class OpenAICompatibleArguments(NamedTuple):
+class OpenAICompatibleArguments(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     messages: list[ChatCompletionMessageParam]
-    tools: list[ChatCompletionToolParam] | None = None
-    response_format: ResponseFormat | None = None
+    tools: list[ChatCompletionToolParam] | NotGiven = NotGiven()
+    response_format: ResponseFormatJSONSchema | NotGiven = NotGiven()
 
 
 class OpenAIModel(APIModel):
@@ -60,9 +64,9 @@ class OpenAIModel(APIModel):
     def _process_tools(
             self,
             tools: dict[str, Tool] | None,
-    ) -> list[ChatCompletionToolParam] | None:
+    ) -> list[ChatCompletionToolParam] | NotGiven:
         if tools is None:
-            return None
+            return NotGiven()
 
         open_ai_compatible_tools = []
         for tool_name, tool in tools.items():
@@ -89,6 +93,25 @@ class OpenAIModel(APIModel):
                 )
             )
         return open_ai_compatible_tools
+
+    def _process_response_format(
+            self,
+            response_format: type[BaseModel] | None
+    ) -> ResponseFormatJSONSchema | NotGiven:
+        if response_format is None:
+            return NotGiven()
+
+        strict_response_format = make_strict_model(response_format)
+        schema = strict_response_format.model_json_schema(by_alias=True)
+        json_schema = JSONSchema(
+            name=strict_response_format.__name__,
+            schema=schema,
+            strict=self.strict_mode,
+        )
+        return ResponseFormatJSONSchema(
+            type="json_schema",
+            json_schema=json_schema
+        )
 
     @staticmethod
     def _add_documents_to_messages(
@@ -220,16 +243,7 @@ class OpenAIModel(APIModel):
         messages_with_documents = self._add_documents_to_messages(messages, documents)
         dumped_messages = [message.model_dump(by_alias=True) for message in messages_with_documents]
         open_ai_compatible_tools = self._process_tools(tools)
-
-        if response_format is None:
-            open_ai_compatible_response_format = None
-        else:
-            open_ai_compatible_response_format = cast(
-                ResponseFormat, dict(
-                    type="json_schema",
-                    json_schema=response_format.model_json_schema(by_alias=True)
-                )
-            )
+        open_ai_compatible_response_format = self._process_response_format(response_format)
 
         parameters = OpenAICompatibleArguments(
             messages=cast(list[ChatCompletionMessageParam], dumped_messages),
@@ -250,7 +264,7 @@ class OpenAIModel(APIModel):
 
         prompt_creation_arguments = PromptCreationArguments(
             messages=cast(list[dict], arguments.messages),
-            tools=arguments.tools,
+            tools=None if arguments.tools is NotGiven else arguments.tools,
         )
         return prompt_creation_arguments
 
