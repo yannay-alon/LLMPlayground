@@ -7,6 +7,7 @@ class ModelFamily(StrEnum):
     COMMAND_A = "command-a"
     COMMAND_R = "command-r"
     LLAMA = "llama"
+    GPT = "gpt"
 
     @staticmethod
     def infer_family(model_name: str) -> ModelFamily:
