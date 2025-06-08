@@ -16,10 +16,10 @@ class RateLimitException(Exception):
 
 
 class RateLimitDecorator:
-    def __init__(self, calls: int = 15, period: float = 900, clock: Callable[[], float] = time.perf_counter):
+    def __init__(self, calls: int = 15, period: float = 900, clock: Callable[[], float] | None = None):
         self.clamped_calls = max(1, min(sys.maxsize, calls))
         self.period = period
-        self.clock = clock
+        self.clock = clock if clock is not None else time.perf_counter
 
         self.last_reset = clock()
         self.num_calls = 0
