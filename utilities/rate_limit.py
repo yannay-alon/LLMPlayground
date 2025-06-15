@@ -11,15 +11,15 @@ OUTPUT = TypeVar("OUTPUT")
 
 
 class RateLimitException(Exception):
-    def __init__(self, message: str, remaining_period: float):
+    def __init__(self, message: str, remaining_period_in_seconds: float):
         super().__init__(message)
-        self.remaining_period = remaining_period
+        self.remaining_period_in_seconds = remaining_period_in_seconds
 
 
 class RateLimiter:
-    def __init__(self, calls: int = 15, period: float = 900, clock: Callable[[], float] | None = None):
+    def __init__(self, calls: int = 15, period_in_seconds: float = 900, clock: Callable[[], float] | None = None):
         self.clamped_calls = max(1, min(sys.maxsize, calls))
-        self.period = period
+        self.period_in_seconds = period_in_seconds
         self.clock = clock if clock is not None else time.perf_counter
 
         self.last_reset = self.clock()
@@ -30,16 +30,16 @@ class RateLimiter:
     def __call__(self, function: Callable[INPUT, OUTPUT]) -> Callable[INPUT, OUTPUT]:
         def raise_on_rate_limit() -> None:
             with self.lock:
-                remaining_period = self.__remaining_period()
+                remaining_period_in_seconds = self.__remaining_period_in_seconds()
 
-                if remaining_period <= 0:
+                if remaining_period_in_seconds <= 0:
                     self.num_calls = 0
                     self.last_reset = self.clock()
 
                 self.num_calls += 1
 
                 if self.num_calls > self.clamped_calls:
-                    raise RateLimitException("too many calls", remaining_period)
+                    raise RateLimitException("too many calls", remaining_period_in_seconds)
 
         @wraps(function)
         def sync_wrapper(*args: INPUT.args, **kwargs: INPUT.kwargs) -> OUTPUT:
@@ -58,9 +58,9 @@ class RateLimiter:
 
         return wrapper
 
-    def __remaining_period(self):
+    def __remaining_period_in_seconds(self):
         elapsed = self.clock() - self.last_reset
-        return self.period - elapsed
+        return self.period_in_seconds - elapsed
 
 
 def sleep_and_retry(function: Callable[INPUT, OUTPUT]) -> Callable[INPUT, OUTPUT]:
@@ -70,7 +70,7 @@ def sleep_and_retry(function: Callable[INPUT, OUTPUT]) -> Callable[INPUT, OUTPUT
             try:
                 return function(*args, **kwargs)
             except RateLimitException as exception:
-                time.sleep(exception.remaining_period)
+                time.sleep(exception.remaining_period_in_seconds)
 
     @wraps(function)
     async def async_wrapper(*args: INPUT.args, **kwargs: INPUT.kwargs) -> OUTPUT:
@@ -78,7 +78,7 @@ def sleep_and_retry(function: Callable[INPUT, OUTPUT]) -> Callable[INPUT, OUTPUT
             try:
                 return await function(*args, **kwargs)
             except RateLimitException as exception:
-                await asyncio.sleep(exception.remaining_period)
+                await asyncio.sleep(exception.remaining_period_in_seconds)
 
     if asyncio.iscoroutinefunction(function):
         wrapper = async_wrapper
