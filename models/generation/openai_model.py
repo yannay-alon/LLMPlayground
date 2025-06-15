@@ -102,10 +102,9 @@ class OpenAIModel(APIModel):
             return NotGiven()
 
         strict_response_format = make_strict_model(response_format)
-        schema = strict_response_format.model_json_schema(by_alias=True)
         json_schema = JSONSchema(
-            name=strict_response_format.__name__,
-            schema=schema,
+            name=response_format.__name__,
+            schema=strict_response_format,
             strict=self.strict_mode,
         )
         return ResponseFormatJSONSchema(
