@@ -140,6 +140,8 @@ class APIModel(ABC):
 
         if tools is not None:
             tools = self._registered_tools | tools
+        else:
+            tools = self._registered_tools
 
         return self._invoke(
             messages=loaded_messages,
@@ -214,6 +216,8 @@ class APIModel(ABC):
 
         if tools is not None:
             tools = self._registered_tools | tools
+        else:
+            tools = self._registered_tools
 
         return await self._async_invoke(
             messages=loaded_messages,
