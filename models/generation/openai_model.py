@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Any, cast, Iterable, AsyncIterable
 
 import httpx
-from openai import Client, AsyncClient, NotGiven
+from openai import Client, AsyncClient
 from openai.types.chat import ChatCompletionToolParam, ChatCompletionMessageParam
 from openai.types.chat.chat_completion import Choice as OpenAIChoice
 from openai.types.chat.chat_completion_chunk import Choice as OpenAIChoiceChunk
@@ -19,15 +19,15 @@ from components.responses.choice import FinishReason
 from components.tools import Tool
 from models.generation.api_model import APIModel, PromptCreationArguments
 from models.utilities.json_parsing import parse_json
-from utilities.pydantic_utilities import make_strict_model
+from utilities.pydantic_utilities import make_strict_model, clear_empty_fields
 
 
 class OpenAICompatibleArguments(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     messages: list[ChatCompletionMessageParam]
-    tools: list[ChatCompletionToolParam] | NotGiven = NotGiven()
-    response_format: ResponseFormatJSONSchema | NotGiven = NotGiven()
+    tools: list[ChatCompletionToolParam] | None = None
+    response_format: ResponseFormatJSONSchema | None = None
 
 
 class OpenAIModel(APIModel):
@@ -64,9 +64,9 @@ class OpenAIModel(APIModel):
     def _process_tools(
             self,
             tools: dict[str, Tool] | None,
-    ) -> list[ChatCompletionToolParam] | NotGiven:
+    ) -> list[ChatCompletionToolParam] | None:
         if tools is None:
-            return NotGiven()
+            return None
 
         open_ai_compatible_tools = []
         for tool_name, tool in tools.items():
@@ -97,9 +97,9 @@ class OpenAIModel(APIModel):
     def _process_response_format(
             self,
             response_format: type[BaseModel] | None
-    ) -> ResponseFormatJSONSchema | NotGiven:
+    ) -> ResponseFormatJSONSchema | None:
         if response_format is None:
-            return NotGiven()
+            return None
 
         strict_response_format = make_strict_model(response_format)
         json_schema = JSONSchema(
@@ -142,15 +142,13 @@ class OpenAIModel(APIModel):
             temperature: float
     ) -> Completion | Iterable[Completion]:
         arguments = self._prepare_arguments(messages, tools, documents, response_format)
+        non_empty_arguments = clear_empty_fields(arguments, max_tokens=max_tokens)
 
         response = self.client.chat.completions.create(
             model=self.model_name,
-            messages=arguments.messages,
             stream=stream,
-            tools=arguments.tools,
-            response_format=arguments.response_format,
-            max_tokens=max_tokens,
             temperature=temperature,
+            **non_empty_arguments,
         )
         if not stream:
             choices = [
@@ -192,15 +190,13 @@ class OpenAIModel(APIModel):
             temperature: float
     ) -> Completion | AsyncIterable[Completion]:
         arguments = self._prepare_arguments(messages, tools, documents, response_format)
+        non_empty_arguments = clear_empty_fields(arguments, max_tokens=max_tokens)
 
         response = await self.async_client.chat.completions.create(
             model=self.model_name,
-            messages=arguments.messages,
             stream=stream,
-            tools=arguments.tools,
-            response_format=arguments.response_format,
-            max_tokens=max_tokens,
             temperature=temperature,
+            **non_empty_arguments,
         )
 
         if not stream:
@@ -263,7 +259,7 @@ class OpenAIModel(APIModel):
 
         prompt_creation_arguments = PromptCreationArguments(
             messages=cast(list[dict], arguments.messages),
-            tools=None if arguments.tools is NotGiven else arguments.tools,
+            tools=arguments.tools,
         )
         return prompt_creation_arguments
 
@@ -283,9 +279,11 @@ class OpenAIModel(APIModel):
         else:
             message = choice.message
 
+        if tools is None:
+            tools = {}
         tool_mapping = defaultdict()
-        for tool in tools or []:
-            tool_mapping[tool.name] = tool
+        for tool_name, tool in tools.items():
+            tool_mapping[tool_name] = tool
 
         parsed_message = None
         if response_format is not None:
