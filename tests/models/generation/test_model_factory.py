@@ -1,17 +1,18 @@
 from typing import Any
 
-from models import ModelFactory
+from models.generation import ModelFactory
+from models.generation.cohere_model import CohereModel
 
 
 class TestModelFactory:
     def test_model_creation(self, mocker: Any) -> None:
-        mock_connection_details = mocker.patch("models.model_factory.ConnectionDetails")
+        mock_connection_details = mocker.patch("models.generation.model_factory.ConnectionDetails")
         mock_connection_details.get_api_key.return_value = "default-key"
         mock_connection_details.get_base_url.return_value = "default-url"
 
         model = ModelFactory.get_model("command-a-test")
 
-        assert isinstance(model, ModelFactory.default_model_class)
+        assert isinstance(model, CohereModel)
         assert model.model_name == "command-a-test"
         assert model.api_key == "default-key"
         assert model.base_url == "default-url"

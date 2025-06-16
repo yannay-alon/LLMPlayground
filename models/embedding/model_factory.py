@@ -1,9 +1,7 @@
-import warnings
+from models.embedding.api_model import APIModel
+from models.embedding.openai_model import OpenAIModel
 
-from models.api_model import APIModel
-from models.openai_model import OpenAIModel
-
-from models.utilities import ModelFamily, ConnectionDetails
+from models.utilities import ConnectionDetails
 
 
 class ModelFactory:
@@ -22,8 +20,4 @@ class ModelFactory:
         if base_url is None:
             base_url = ConnectionDetails.get_base_url(model_name)
 
-        model_family = ModelFamily.infer_family(model_name)
-
-        warnings.warn(
-            f"Could not find a specific model class for {model_name}. Defaults to {cls.default_model_class.__name__}")
         return cls.default_model_class(model_name, api_key, base_url, **kwargs)

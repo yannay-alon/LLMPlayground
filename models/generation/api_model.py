@@ -40,6 +40,8 @@ class APIModel(ABC):
         self._max_tokens = None
         self._registered_tools = dict()
 
+    # <editor-fold desc="Tools Management">
+
     def register_tool(self, tool: Tool):
         assert all(
             tool.name != registered_tool_name
@@ -57,6 +59,7 @@ class APIModel(ABC):
         else:
             raise ValueError(f"Tool '{tool_name}' not found in registered tools.")
 
+    # </editor-fold>
 
     # <editor-fold desc="Hyperparameters">
     @property
@@ -136,7 +139,9 @@ class APIModel(ABC):
         temperature = temperature if temperature is not None else self.temperature
 
         if tools is not None:
-            tools = self._registered_tools | tools
+            tools = self.tools | tools
+        else:
+            tools = self.tools or None
 
         return self._invoke(
             messages=loaded_messages,
@@ -210,7 +215,9 @@ class APIModel(ABC):
         temperature = temperature if temperature is not None else self.temperature
 
         if tools is not None:
-            tools = self._registered_tools | tools
+            tools = self.tools | tools
+        else:
+            tools = self.tools or None
 
         return await self._async_invoke(
             messages=loaded_messages,

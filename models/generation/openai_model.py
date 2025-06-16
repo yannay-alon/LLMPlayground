@@ -1,29 +1,33 @@
 import json
 from collections import defaultdict
-from typing import Any, cast, Iterable, AsyncIterable, NamedTuple
+from typing import Any, cast, Iterable, AsyncIterable
 
 import httpx
 from openai import Client, AsyncClient
 from openai.types.chat import ChatCompletionToolParam, ChatCompletionMessageParam
 from openai.types.chat.chat_completion import Choice as OpenAIChoice
 from openai.types.chat.chat_completion_chunk import Choice as OpenAIChoiceChunk
-from openai.types.chat.completion_create_params import ResponseFormat
+from openai.types.shared_params import ResponseFormatJSONSchema
 from openai.types.shared_params.function_definition import FunctionDefinition
-from pydantic import BaseModel
+from openai.types.shared_params.response_format_json_schema import JSONSchema
+from pydantic import BaseModel, ConfigDict
 
 from components.documents import Document
 from components.messages import BaseMessage
 from components.responses import Completion, Choice, ToolCall, Usage
 from components.responses.choice import FinishReason
 from components.tools import Tool
-from models.api_model import APIModel, PromptCreationArguments
+from models.generation.api_model import APIModel, PromptCreationArguments
 from models.utilities.json_parsing import parse_json
+from utilities.pydantic_utilities import make_strict_model, clear_empty_fields
 
 
-class OpenAICompatibleArguments(NamedTuple):
+class OpenAICompatibleArguments(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     messages: list[ChatCompletionMessageParam]
     tools: list[ChatCompletionToolParam] | None = None
-    response_format: ResponseFormat | None = None
+    response_format: ResponseFormatJSONSchema | None = None
 
 
 class OpenAIModel(APIModel):
@@ -90,6 +94,24 @@ class OpenAIModel(APIModel):
             )
         return open_ai_compatible_tools
 
+    def _process_response_format(
+            self,
+            response_format: type[BaseModel] | None
+    ) -> ResponseFormatJSONSchema | None:
+        if response_format is None:
+            return None
+
+        strict_response_format = make_strict_model(response_format)
+        json_schema = JSONSchema(
+            name=response_format.__name__,
+            schema=strict_response_format,
+            strict=self.strict_mode,
+        )
+        return ResponseFormatJSONSchema(
+            type="json_schema",
+            json_schema=json_schema
+        )
+
     @staticmethod
     def _add_documents_to_messages(
             messages: list[BaseMessage],
@@ -120,15 +142,13 @@ class OpenAIModel(APIModel):
             temperature: float
     ) -> Completion | Iterable[Completion]:
         arguments = self._prepare_arguments(messages, tools, documents, response_format)
+        non_empty_arguments = clear_empty_fields(arguments, max_tokens=max_tokens)
 
         response = self.client.chat.completions.create(
             model=self.model_name,
-            messages=arguments.messages,
             stream=stream,
-            tools=arguments.tools,
-            response_format=arguments.response_format,
-            max_tokens=max_tokens,
             temperature=temperature,
+            **non_empty_arguments,
         )
         if not stream:
             choices = [
@@ -170,15 +190,13 @@ class OpenAIModel(APIModel):
             temperature: float
     ) -> Completion | AsyncIterable[Completion]:
         arguments = self._prepare_arguments(messages, tools, documents, response_format)
+        non_empty_arguments = clear_empty_fields(arguments, max_tokens=max_tokens)
 
         response = await self.async_client.chat.completions.create(
             model=self.model_name,
-            messages=arguments.messages,
             stream=stream,
-            tools=arguments.tools,
-            response_format=arguments.response_format,
-            max_tokens=max_tokens,
             temperature=temperature,
+            **non_empty_arguments,
         )
 
         if not stream:
@@ -220,16 +238,7 @@ class OpenAIModel(APIModel):
         messages_with_documents = self._add_documents_to_messages(messages, documents)
         dumped_messages = [message.model_dump(by_alias=True) for message in messages_with_documents]
         open_ai_compatible_tools = self._process_tools(tools)
-
-        if response_format is None:
-            open_ai_compatible_response_format = None
-        else:
-            open_ai_compatible_response_format = cast(
-                ResponseFormat, dict(
-                    type="json_schema",
-                    json_schema=response_format.model_json_schema(by_alias=True)
-                )
-            )
+        open_ai_compatible_response_format = self._process_response_format(response_format)
 
         parameters = OpenAICompatibleArguments(
             messages=cast(list[ChatCompletionMessageParam], dumped_messages),
@@ -270,9 +279,11 @@ class OpenAIModel(APIModel):
         else:
             message = choice.message
 
+        if tools is None:
+            tools = {}
         tool_mapping = defaultdict()
-        for tool in tools or []:
-            tool_mapping[tool.name] = tool
+        for tool_name, tool in tools.items():
+            tool_mapping[tool_name] = tool
 
         parsed_message = None
         if response_format is not None:
