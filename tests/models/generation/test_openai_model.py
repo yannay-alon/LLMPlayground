@@ -8,7 +8,7 @@ from openai.types.chat.chat_completion_chunk import Choice as OpenAIChoiceChunk
 from components.messages import UserMessage
 from components.responses import Completion
 from components.tools import Tool
-from models.generation.openai_model import OpenAIModel
+from models.generation.remote.openai_model import OpenAIModel
 
 
 class TestOpenAIModel:

@@ -8,7 +8,7 @@ from components.messages import UserMessage, SystemMessage, BaseMessage
 from components.responses import Completion
 from components.responses.choice import ParsedType
 from components.tools import Tool
-from models.generation.api_model import APIModel, PromptCreationArguments
+from models.generation.remote.api_model import APIModel, PromptCreationArguments
 
 
 class TestAPIModel:

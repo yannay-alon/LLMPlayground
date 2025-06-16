@@ -20,7 +20,7 @@ from components.messages import BaseMessage
 from components.responses import Completion, Usage, Choice, ToolCall
 from components.responses.choice import ParsedType, FinishReason
 from components.tools import Tool
-from models.generation.api_model import APIModel, PromptCreationArguments
+from models.generation.remote.api_model import APIModel, PromptCreationArguments
 from models.utilities.json_parsing import parse_json
 from utilities.pydantic_utilities import make_strict_model, clear_empty_fields
 

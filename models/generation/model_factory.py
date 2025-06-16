@@ -1,8 +1,8 @@
 import warnings
 
-from models.generation.api_model import APIModel
-from models.generation.openai_model import OpenAIModel
-from models.generation.cohere_model import CohereModel
+from models.generation.remote.api_model import APIModel
+from models.generation.remote.openai_model import OpenAIModel
+from models.generation.remote.cohere_model import CohereModel
 
 from models.utilities import ModelFamily, ConnectionDetails
 

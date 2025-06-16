@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import overload, Literal, Any, Iterable, AsyncIterable
 from dataclasses import dataclass, field
+from typing import overload, Literal, Any, Iterable, AsyncIterable
 
 from pydantic import BaseModel
 
@@ -20,16 +20,12 @@ class PromptCreationArguments:
     documents: list[dict[str, Any]] | None = None
 
 
-class APIModel(ABC):
+class LanguageModel(ABC):
     def __init__(
             self,
             model_name: str,
-            api_key: str | None = None,
-            base_url: str | None = None,
     ):
         self.model_name = model_name
-        self.api_key = api_key
-        self.base_url = base_url
 
         try:
             self.tokenizer = get_tokenizer(model_name)
