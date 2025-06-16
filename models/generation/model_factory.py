@@ -2,6 +2,7 @@ import warnings
 
 from models.generation.api_model import APIModel
 from models.generation.openai_model import OpenAIModel
+from models.generation.cohere_model import CohereModel
 
 from models.utilities import ModelFamily, ConnectionDetails
 
@@ -27,7 +28,15 @@ class ModelFactory:
 
         model_family = ModelFamily.infer_family(model_name)
 
-        if not silent:
-            warnings.warn(
-                f"Could not find a specific model class for {model_name}. Defaults to {cls.default_model_class.__name__}")
-        return cls.default_model_class(model_name, api_key, base_url, **kwargs)
+        match model_family:
+            case ModelFamily.GPT:
+                return OpenAIModel(model_name, api_key, base_url, **kwargs)
+            case ModelFamily.COMMAND_A | ModelFamily.COMMAND_R:
+                return CohereModel(model_name, api_key, base_url)
+            case _:
+                if not silent:
+                    warnings.warn(
+                        f"Could not find a specific model class for {model_name}. "
+                        f"Defaults to {cls.default_model_class.__name__}"
+                    )
+                return cls.default_model_class(model_name, api_key, base_url, **kwargs)
