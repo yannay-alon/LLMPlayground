@@ -139,9 +139,9 @@ class APIModel(ABC):
         temperature = temperature if temperature is not None else self.temperature
 
         if tools is not None:
-            tools = self._registered_tools | tools
+            tools = self.tools | tools
         else:
-            tools = self._registered_tools
+            tools = self.tools or None
 
         return self._invoke(
             messages=loaded_messages,
@@ -215,9 +215,9 @@ class APIModel(ABC):
         temperature = temperature if temperature is not None else self.temperature
 
         if tools is not None:
-            tools = self._registered_tools | tools
+            tools = self.tools | tools
         else:
-            tools = self._registered_tools
+            tools = self.tools or None
 
         return await self._async_invoke(
             messages=loaded_messages,
