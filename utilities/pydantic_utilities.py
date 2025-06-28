@@ -8,7 +8,7 @@ SCHEMA_TO_RECURSE = TypeVar("SCHEMA_TO_RECURSE")
 
 
 def clear_empty_fields(
-            model: BaseModel, **kwargs: Any
+            model: BaseModel | None, **kwargs: Any
     ) -> dict[str, Any]:
     """
     Get key-value pairs of all non-empty fields in a Pydantic model and any additional fields.
@@ -17,13 +17,16 @@ def clear_empty_fields(
     :param kwargs: Any additional fields to include in the output.
     :return: A dictionary containing only the non-empty fields of the model and additional fields.
     """
-    optional_arguments = {
-        **{
-            key: value for key in model.model_fields
-            if (value := getattr(model, key)) is not None
-        },
-        **kwargs
-    }
+    if model is None:
+        optional_arguments = kwargs
+    else:
+        optional_arguments = {
+            **{
+                key: value for key in model.model_fields
+                if (value := getattr(model, key)) is not None
+            },
+            **kwargs
+        }
     non_empty_arguments = {
         key: value for key, value in optional_arguments.items() if value is not None
     }
