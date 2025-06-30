@@ -3,7 +3,7 @@ from abc import ABC
 from models.generation.language_model import LanguageModel
 
 
-class APIModel(ABC, LanguageModel):
+class APIModel(LanguageModel, ABC):
     def __init__(
             self,
             model_name: str,

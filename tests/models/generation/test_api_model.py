@@ -1,14 +1,13 @@
 from typing import Any, Iterable, AsyncIterable
 
 import pytest
-from pydantic import BaseModel
 
 from components.documents import Document
 from components.messages import UserMessage, SystemMessage, BaseMessage
 from components.responses import Completion
 from components.responses.choice import ParsedType
 from components.tools import Tool
-from models.generation.remote.api_model import APIModel, PromptCreationArguments
+from models.generation.remote.api_model import APIModel
 
 
 class TestAPIModel:
@@ -46,34 +45,14 @@ class TestAPIModel:
             ) -> Completion[ParsedType] | AsyncIterable[Completion[ParsedType]]:
                 return simple_completion
 
-            def _process_arguments_for_prompt_creation(
-                    self,
-                    messages: list[BaseMessage],
-                    tools: dict[str, Tool] | None,
-                    documents: list[Document] | None,
-                    response_format: type[BaseModel] | None
-            ) -> PromptCreationArguments:
-                return PromptCreationArguments(
-                    messages=[message.model_dump() for message in messages],
-                    tools=tools,
-                    documents=documents
-                )
-
         return ConcreteAPIModel
 
     def test_model_initialization(self, mocker: Any, concrete_api_model) -> None:
-        mock_tokenizer = mocker.patch("models.generation.api_model.get_tokenizer")
         model = concrete_api_model("test-model", "test-key", "test-url")
 
         assert model.model_name == "test-model"
         assert model.api_key == "test-key"
         assert model.base_url == "test-url"
-        assert mock_tokenizer.called
-
-    def test_tokenizer_failure_handling(self, mocker: Any, concrete_api_model) -> None:
-        mocker.patch("models.generation.api_model.get_tokenizer", side_effect=ValueError)
-        model = concrete_api_model("test-model")
-        assert model.tokenizer is None
 
     def test_temperature_validation(self, concrete_api_model) -> None:
         model = concrete_api_model("test-model")
@@ -148,16 +127,3 @@ class TestAPIModel:
 
         async_response = await model.async_invoke(messages)
         assert async_response == simple_completion
-
-    def test_create_prompt(self, mocker: Any, concrete_api_model) -> None:
-        mock_tokenizer = mocker.Mock()
-        mock_tokenizer.apply_chat_template.return_value = "processed prompt"
-
-        model = concrete_api_model("test-model")
-        model.tokenizer = mock_tokenizer
-
-        messages = [UserMessage(content="Test message")]
-        result = model.create_prompt(messages)
-
-        assert result == "processed prompt"
-        assert mock_tokenizer.apply_chat_template.called

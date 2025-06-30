@@ -1,23 +1,11 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import overload, Literal, Any, Iterable, AsyncIterable
-
-from pydantic import BaseModel
+from typing import overload, Literal, Iterable, AsyncIterable
 
 from components.documents import Document
 from components.messages import BaseMessage, MessageFactory
 from components.responses import Completion
 from components.responses.choice import ParsedType
 from components.tools import Tool
-from models.utilities import get_tokenizer
-
-
-@dataclass
-class PromptCreationArguments:
-    messages: list[dict[str, str]]
-    additional_tokenization_arguments: dict[str, Any] = field(default_factory=dict)
-    tools: list[dict[str, str]] | None = None
-    documents: list[dict[str, Any]] | None = None
 
 
 class LanguageModel(ABC):
@@ -26,11 +14,6 @@ class LanguageModel(ABC):
             model_name: str,
     ):
         self.model_name = model_name
-
-        try:
-            self.tokenizer = get_tokenizer(model_name)
-        except (ValueError, OSError):
-            self.tokenizer = None
 
         self._temperature = 1
         self._max_tokens = None
@@ -95,7 +78,7 @@ class LanguageModel(ABC):
             self,
             messages: list[BaseMessage] | list[dict[str, str]],
             stream: Literal[False] = False,
-            tools: dict[str, Tool] | None = None,
+            tools: dict[str, Tool] | list[Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -108,8 +91,8 @@ class LanguageModel(ABC):
     def invoke(
             self,
             messages: list[BaseMessage] | list[dict[str, str]],
-            stream: Literal[True] = True,
-            tools: dict[str, Tool] | None = None,
+            stream: Literal[True],
+            tools: dict[str, Tool] | list[Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -118,11 +101,25 @@ class LanguageModel(ABC):
     ) -> Iterable[Completion[ParsedType]]:
         ...
 
+    @overload
+    def invoke(
+            self,
+            messages: list[BaseMessage] | list[dict[str, str]],
+            stream: bool,
+            tools: dict[str, Tool] | list[Tool] | None = None,
+            documents: list[Document] | None = None,
+            response_format: type[ParsedType] | None = None,
+            *,
+            max_tokens: int | None = None,
+            temperature: float = 1,
+    ) -> Completion[ParsedType] | Iterable[Completion[ParsedType]]:
+        ...
+
     def invoke(
             self,
             messages: list[BaseMessage | dict[str, str]],
-            stream: bool = False,
-            tools: dict[str, Tool] | None = None,
+            stream: bool | Literal[True, False] = False,
+            tools: dict[str, Tool] | list[Tool] | list[Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -135,6 +132,8 @@ class LanguageModel(ABC):
         temperature = temperature if temperature is not None else self.temperature
 
         if tools is not None:
+            if isinstance(tools, list):
+                tools = {tool.name: tool for tool in tools}
             tools = self.tools | tools
         else:
             tools = self.tools or None
@@ -171,7 +170,7 @@ class LanguageModel(ABC):
             self,
             messages: list[BaseMessage] | list[dict[str, str]],
             stream: Literal[False] = False,
-            tools: dict[str, Tool] | None = None,
+            tools: dict[str, Tool] | list[Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -184,8 +183,8 @@ class LanguageModel(ABC):
     async def async_invoke(
             self,
             messages: list[BaseMessage] | list[dict[str, str]],
-            stream: Literal[True] = True,
-            tools: dict[str, Tool] | None = None,
+            stream: Literal[True],
+            tools: dict[str, Tool] | list[Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -194,11 +193,25 @@ class LanguageModel(ABC):
     ) -> AsyncIterable[Completion[ParsedType]]:
         ...
 
+    @overload
+    async def async_invoke(
+            self,
+            messages: list[BaseMessage] | list[dict[str, str]],
+            stream: bool,
+            tools: dict[str, Tool] | list[Tool] | None = None,
+            documents: list[Document] | None = None,
+            response_format: type[ParsedType] | None = None,
+            *,
+            max_tokens: int | None = None,
+            temperature: float = 1,
+    ) -> Completion[ParsedType] | AsyncIterable[Completion[ParsedType]]:
+        ...
+
     async def async_invoke(
             self,
             messages: list[BaseMessage | dict[str, str]],
             stream: bool = False,
-            tools: dict[str, Tool] | None = None,
+            tools: dict[str, Tool] | list[Tool] | None = None,
             documents: list[Document] | None = None,
             response_format: type[ParsedType] | None = None,
             *,
@@ -211,6 +224,8 @@ class LanguageModel(ABC):
         temperature = temperature if temperature is not None else self.temperature
 
         if tools is not None:
+            if isinstance(tools, list):
+                tools = {tool.name: tool for tool in tools}
             tools = self.tools | tools
         else:
             tools = self.tools or None
@@ -240,86 +255,6 @@ class LanguageModel(ABC):
 
     # </editor-fold>
 
-    # <editor-fold desc="Prompt Creation">
-
-    @overload
-    def create_prompt(
-            self,
-            messages: list[BaseMessage | dict[str, str]],
-            tools: dict[str, Tool] | None = None,
-            documents: list[Document] | None = None,
-            response_format: type[BaseModel] | None = None,
-            *,
-            tokenize: Literal[False] = False,
-            continue_final_message: bool = False,
-            **kwargs
-    ) -> str:
-        ...
-
-    @overload
-    def create_prompt(
-            self,
-            messages: list[BaseMessage | dict[str, str]],
-            tools: dict[str, Tool] | None = None,
-            documents: list[Document] | None = None,
-            response_format: type[BaseModel] | None = None,
-            *,
-            tokenize: Literal[True] = True,
-            continue_final_message: bool = False,
-            **kwargs
-    ) -> list[int]:
-        ...
-
-    def create_prompt(
-            self,
-            messages: list[BaseMessage | dict[str, str]],
-            tools: dict[str, Tool] | None = None,
-            documents: list[Document] | None = None,
-            response_format: type[BaseModel] | None = None,
-            *,
-            tokenize: bool = False,
-            continue_final_message: bool = False,
-            chat_template: str | None = None,
-            **kwargs
-    ) -> str | list[int]:
-        if self.tokenizer is None:
-            raise ValueError("Tokenizer is not available for this model. Cannot create prompt.")
-
-        loaded_messages = self._load_messages(messages)
-
-        if tools is not None:
-            tools = self._registered_tools | tools
-
-        prompt_creation_arguments = self._process_arguments_for_prompt_creation(
-            loaded_messages,
-            tools,
-            documents,
-            response_format
-        )
-
-        tokenization_arguments = {
-            "conversation": prompt_creation_arguments.messages,
-            "tools": prompt_creation_arguments.tools,
-            "documents": prompt_creation_arguments.documents,
-            **prompt_creation_arguments.additional_tokenization_arguments,
-        }
-
-        non_empty_tokenization_arguments = {
-            key: value
-            for key, value in tokenization_arguments.items()
-            if value is not None
-        }
-
-        return self.tokenizer.apply_chat_template(
-            **non_empty_tokenization_arguments,
-            tokenize=tokenize,
-            continue_final_message=continue_final_message,
-            chat_template=chat_template,
-            **kwargs
-        )
-
-    # </editor-fold>
-
     @staticmethod
     def _load_messages(messages: list[BaseMessage | dict[str, str]]) -> list[BaseMessage]:
         loaded_messages = []
@@ -331,23 +266,3 @@ class LanguageModel(ABC):
             loaded_messages.append(processed_message)
 
         return loaded_messages
-
-    @abstractmethod
-    def _process_arguments_for_prompt_creation(
-            self,
-            messages: list[BaseMessage],
-            tools: dict[str, Tool] | None,
-            documents: list[Document] | None,
-            response_format: type[BaseModel] | None
-    ) -> PromptCreationArguments:
-        """
-        Process the arguments before applying the tokenizer's apply_chat_message method
-
-        :param messages: The messages to process
-        :param tools: The tools to process
-        :param documents: The documents to process
-        :param response_format: The output response format to process
-        :return: Processed messages, processed tools, processed documents, and any additional tokenization arguments.
-        If the tokenizer does not support any of the arguments, return None for that argument.
-        """
-        pass
