@@ -1,7 +1,7 @@
 from typing import Any
 
 from models.generation import ModelFactory
-from models.generation.cohere_model import CohereModel
+from models.generation.remote.cohere_model import CohereModel
 
 
 class TestModelFactory:

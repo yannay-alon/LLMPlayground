@@ -17,7 +17,7 @@ from components.messages import BaseMessage
 from components.responses import Completion, Choice, ToolCall, Usage
 from components.responses.choice import FinishReason
 from components.tools import Tool
-from models.generation.api_model import APIModel, PromptCreationArguments
+from models.generation.remote.api_model import APIModel
 from models.utilities.json_parsing import parse_json
 from utilities.pydantic_utilities import make_strict_model, clear_empty_fields
 
@@ -247,21 +247,6 @@ class OpenAIModel(APIModel):
         )
 
         return parameters
-
-    def _process_arguments_for_prompt_creation(
-            self,
-            messages: list[BaseMessage],
-            tools: dict[str, Tool] | None,
-            documents: list[Document] | None,
-            response_format: type[BaseModel] | None
-    ) -> PromptCreationArguments:
-        arguments = self._prepare_arguments(messages, tools, documents, response_format)
-
-        prompt_creation_arguments = PromptCreationArguments(
-            messages=cast(list[dict], arguments.messages),
-            tools=arguments.tools,
-        )
-        return prompt_creation_arguments
 
     @staticmethod
     def _build_choice(

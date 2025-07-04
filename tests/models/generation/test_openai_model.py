@@ -8,7 +8,7 @@ from openai.types.chat.chat_completion_chunk import Choice as OpenAIChoiceChunk
 from components.messages import UserMessage
 from components.responses import Completion
 from components.tools import Tool
-from models.generation.openai_model import OpenAIModel
+from models.generation.remote.openai_model import OpenAIModel
 
 
 class TestOpenAIModel:
@@ -16,14 +16,14 @@ class TestOpenAIModel:
     def mock_client(self, mocker) -> Client:
         client = mocker.Mock()
         client.http_client = httpx.Client()
-        mocker.patch("models.generation.openai_model.Client", return_value=client)
+        mocker.patch("models.generation.remote.openai_model.Client", return_value=client)
         return client
 
     @pytest.fixture
     def mock_async_client(self, mocker) -> AsyncClient:
         client = mocker.AsyncMock()
         client.http_client = httpx.AsyncClient()
-        mocker.patch("models.generation.openai_model.AsyncClient", return_value=client)
+        mocker.patch("models.generation.remote.openai_model.AsyncClient", return_value=client)
         return client
 
     @pytest.fixture

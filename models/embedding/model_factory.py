@@ -5,7 +5,6 @@ from models.utilities import ConnectionDetails
 
 
 class ModelFactory:
-    default_model_class = OpenAIModel
 
     @classmethod
     def get_model(
@@ -20,4 +19,4 @@ class ModelFactory:
         if base_url is None:
             base_url = ConnectionDetails.get_base_url(model_name)
 
-        return cls.default_model_class(model_name, api_key, base_url, **kwargs)
+        return OpenAIModel(model_name, api_key, base_url, **kwargs)

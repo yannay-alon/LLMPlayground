@@ -20,7 +20,7 @@ from components.messages import BaseMessage
 from components.responses import Completion, Usage, Choice, ToolCall
 from components.responses.choice import ParsedType, FinishReason
 from components.tools import Tool
-from models.generation.api_model import APIModel, PromptCreationArguments
+from models.generation.remote.api_model import APIModel
 from models.utilities.json_parsing import parse_json
 from utilities.pydantic_utilities import make_strict_model, clear_empty_fields
 
@@ -144,11 +144,6 @@ class CohereModel(APIModel):
                         ], usage=None)
 
             return streaming_generator()
-
-    def _process_arguments_for_prompt_creation(self, messages: list[BaseMessage], tools: dict[str, Tool] | None,
-                                               documents: list[Document] | None,
-                                               response_format: type[BaseModel] | None) -> PromptCreationArguments:
-        pass
 
     @staticmethod
     def _get_matching_finish_reason(finish_reason: ChatFinishReason) -> FinishReason:
