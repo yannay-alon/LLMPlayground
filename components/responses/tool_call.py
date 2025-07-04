@@ -24,7 +24,11 @@ class ToolCall(BaseModel):
             elif argument.name in arguments_values:
                 argument_value = arguments_values[argument.name]
                 try:
-                    validated_argument = TypeAdapter(argument.annotation).validate_strings(argument_value)
+                    type_adapter = TypeAdapter(argument.annotation)
+                    if isinstance(argument_value, str):
+                        validated_argument = type_adapter.validate_strings(argument_value)
+                    else:
+                        validated_argument = type_adapter.validate_python(argument_value)
                     validated_arguments[argument.name] = validated_argument
                 except ValidationError:
                     raise TypeError(
