@@ -5,3 +5,4 @@ httpx==0.28.1
 pydantic==2.10.6
 pydantic_core==2.27.2
 python-dotenv==1.1.0
+ollama==0.5.1

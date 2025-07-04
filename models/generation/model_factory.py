@@ -1,14 +1,13 @@
 import warnings
 
-from models.generation.remote.api_model import APIModel
-from models.generation.remote.openai_model import OpenAIModel
+from models.generation.language_model import LanguageModel
+from models.generation.local.ollama_model import OllamaModel
 from models.generation.remote.cohere_model import CohereModel
-
+from models.generation.remote.openai_model import OpenAIModel
 from models.utilities import ModelFamily, ConnectionDetails
 
 
 class ModelFactory:
-    default_model_class = OpenAIModel
 
     @classmethod
     def get_model(
@@ -20,7 +19,8 @@ class ModelFactory:
             *,
             silent: bool = True,
             **kwargs,
-    ) -> APIModel:
+    ) -> LanguageModel:
+        model_name = model_name.lower()
         if api_key is None:
             api_key = ConnectionDetails.get_api_key(model_name, provider=provider)
         if base_url is None:
@@ -37,6 +37,6 @@ class ModelFactory:
                 if not silent:
                     warnings.warn(
                         f"Could not find a specific model class for {model_name}. "
-                        f"Defaults to {cls.default_model_class.__name__}"
+                        f"Defaults to {OllamaModel.__name__}"
                     )
-                return cls.default_model_class(model_name, api_key, base_url, **kwargs)
+                return OllamaModel(model_name)
