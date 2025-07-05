@@ -5,6 +5,7 @@ from models.generation.local.ollama_model import OllamaModel
 from models.generation.remote.cohere_model import CohereModel
 from models.generation.remote.openai_model import OpenAIModel
 from models.utilities import ModelFamily, ConnectionDetails
+from models.utilities.model_family import Provider
 
 
 class ModelFactory:
@@ -15,7 +16,7 @@ class ModelFactory:
             model_name: str,
             api_key: str | None = None,
             base_url: str | None = None,
-            provider: str | None = None,
+            provider: Provider | None = None,
             *,
             silent: bool = True,
             **kwargs,
