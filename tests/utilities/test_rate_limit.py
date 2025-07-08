@@ -200,7 +200,7 @@ class TestRateLimiter:
         failed_calls = 0
         lock = threading.Lock()
 
-        # Create both sync and async functions that share the same limiter
+
         @rate_limiter
         def sync_function():
             return "Sync"
@@ -209,7 +209,7 @@ class TestRateLimiter:
         async def async_function():
             return "Async"
 
-        # Helper function to run async function in a thread
+
         def thread_run_async():
             nonlocal successful_calls, failed_calls
             loop = asyncio.new_event_loop()
@@ -224,43 +224,43 @@ class TestRateLimiter:
             finally:
                 loop.close()
 
-        # Create and start threads that will run the async function
+
         threads = []
         for _ in range(2):
             thread = threading.Thread(target=thread_run_async)
             thread.start()
             threads.append(thread)
 
-        # Run sync function in main thread
+
         try:
             sync_function()
             successful_calls += 1
         except RateLimitException:
             failed_calls += 1
 
-        # Run async function in current event loop
+
         try:
             await async_function()
             successful_calls += 1
         except RateLimitException:
             failed_calls += 1
 
-        # Wait for all threads to complete
+
         for thread in threads:
             thread.join()
 
-        # Verify total calls match our rate limit
-        assert successful_calls == 3  # Based on fixture settings (calls=3)
-        assert failed_calls == 1  # We made 4 attempts total (2 thread + 1 sync + 1 async)
 
-        # Wait for the period to expire
+        assert successful_calls == 3
+        assert failed_calls == 1
+
+
         await asyncio.sleep(1.1)
 
-        # Verify we can make calls again after the period expires
+
         successful_calls = 0
         failed_calls = 0
 
-        # Try one of each type after reset
+
         try:
             sync_function()
             successful_calls += 1
@@ -275,3 +275,141 @@ class TestRateLimiter:
 
         assert successful_calls == 2
         assert failed_calls == 0
+
+    def test_sync_context_manager(self, rate_limiter: RateLimiter):
+        for _ in range(3):
+            with rate_limiter:
+                pass
+
+        with pytest.raises(RateLimitException):
+            with rate_limiter:
+                pass
+
+        time.sleep(1.1)
+        with rate_limiter:
+            pass
+
+    def test_sync_context_manager_shared(self, shared_rate_limiter: RateLimiter, empty_shared_rate_limiter: RateLimiter):
+        with shared_rate_limiter:
+            pass
+        with empty_shared_rate_limiter:
+            pass
+        with shared_rate_limiter:
+            pass
+
+        with pytest.raises(RateLimitException):
+            with empty_shared_rate_limiter:
+                pass
+
+    def test_sync_context_manager_with_sleep(self, sleeping_rate_limiter: RateLimiter):
+        for _ in range(3):
+            with sleeping_rate_limiter:
+                pass
+
+        start_time = time.perf_counter()
+        with sleeping_rate_limiter:
+            pass
+        end_time = time.perf_counter()
+        run_duration = end_time - start_time
+        assert run_duration >= 0.99
+
+    @pytest.mark.asyncio
+    async def test_async_context_manager(self, rate_limiter: RateLimiter):
+
+        for _ in range(3):
+            async with rate_limiter:
+                pass
+
+
+        with pytest.raises(RateLimitException):
+            async with rate_limiter:
+                pass
+
+
+        await asyncio.sleep(1.1)
+        async with rate_limiter:
+            pass
+
+    @pytest.mark.asyncio
+    async def test_async_context_manager_shared(self, shared_rate_limiter: RateLimiter, empty_shared_rate_limiter: RateLimiter):
+
+        async with shared_rate_limiter:
+            pass
+        async with empty_shared_rate_limiter:
+            pass
+        async with shared_rate_limiter:
+            pass
+
+        with pytest.raises(RateLimitException):
+            async with empty_shared_rate_limiter:
+                pass
+
+    @pytest.mark.asyncio
+    async def test_async_context_manager_with_sleep(self, sleeping_rate_limiter: RateLimiter):
+
+        for _ in range(3):
+            async with sleeping_rate_limiter:
+                pass
+
+
+        start_time = time.perf_counter()
+        async with sleeping_rate_limiter:
+            pass
+        end_time = time.perf_counter()
+        run_duration = end_time - start_time
+        assert run_duration >= 0.99
+
+    @pytest.mark.asyncio
+    async def test_mixed_context_manager_calls(self, rate_limiter: RateLimiter):
+        successful_calls = 0
+        failed_calls = 0
+        lock = threading.Lock()
+
+
+        def thread_run_async():
+            nonlocal successful_calls, failed_calls
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(async_context_manager_task())
+                with lock:
+                    successful_calls += 1
+            except RateLimitException:
+                with lock:
+                    failed_calls += 1
+            finally:
+                loop.close()
+
+        async def async_context_manager_task():
+            async with rate_limiter:
+                return "Async"
+
+
+        threads = []
+        for _ in range(2):
+            thread = threading.Thread(target=thread_run_async)
+            thread.start()
+            threads.append(thread)
+
+
+        try:
+            with rate_limiter:
+                pass
+            successful_calls += 1
+        except RateLimitException:
+            failed_calls += 1
+
+
+        try:
+            async with rate_limiter:
+                pass
+            successful_calls += 1
+        except RateLimitException:
+            failed_calls += 1
+
+
+        for thread in threads:
+            thread.join()
+
+        assert successful_calls == 3
+        assert failed_calls == 1
