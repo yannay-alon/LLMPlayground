@@ -4,7 +4,8 @@ from functools import wraps
 import time
 import sys
 import threading
-from typing import Callable, ParamSpec, TypeVar, Hashable, Generic
+from typing import Callable, ParamSpec, TypeVar, Hashable
+from weakref import WeakValueDictionary
 
 INPUT = ParamSpec("INPUT")
 OUTPUT = TypeVar("OUTPUT")
@@ -17,7 +18,8 @@ class RateLimitException(Exception):
 
 
 class RateLimiter:
-    _instances: dict[Hashable, "RateLimiter"] = {}
+    _instances: WeakValueDictionary[Hashable, "RateLimiter"] = WeakValueDictionary()
+    # _counter: dict[Hashable, int] = {}
 
     def __init__(
             self,
@@ -42,14 +44,25 @@ class RateLimiter:
         self.async_lock = asyncio.Lock()
 
         self._initialized = True
+        # self.shared_limiter_name = shared_limiter_name
 
     def __new__(cls, *args, shared_limiter_name: Hashable | None = None, **kwargs):
         if shared_limiter_name is None:
             return super().__new__(cls)
 
         if shared_limiter_name not in cls._instances:
-            cls._instances[shared_limiter_name] = super().__new__(cls)
+            new_instance = super().__new__(cls)
+            cls._instances[shared_limiter_name] = new_instance
+            # cls._counter[shared_limiter_name] = 0
+        # cls._counter[shared_limiter_name] += 1
         return cls._instances[shared_limiter_name]
+
+    # def __del__(self):
+    #     if self.shared_limiter_name in self._instances:
+    #         self.__class__._counter[self.shared_limiter_name] -= 1
+    #         if self.__class__._counter[self.shared_limiter_name] <= 0:
+    #             del self.__class__._instances[self.shared_limiter_name]
+    #             del self.__class__._counter[self.shared_limiter_name]
 
     def __call__(self, function: Callable[INPUT, OUTPUT]) -> Callable[INPUT, OUTPUT]:
         @wraps(function)

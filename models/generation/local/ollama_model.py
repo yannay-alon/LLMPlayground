@@ -10,6 +10,7 @@ from ollama import (
     ResponseError,
 )
 from pydantic import BaseModel
+from tqdm import tqdm
 
 from components.documents import Document
 from components.messages import BaseMessage
@@ -47,14 +48,32 @@ class OllamaModel(LanguageModel):
             self.client.show(model=self.model_name)
         except ResponseError as error:
             if error.status_code == 404:
-                print(f"Model {self.model_name} is not downloaded. Attempting to pull...")
-                try:
-                    self.client.pull(model=self.model_name)
-                    print(f"Successfully pulled model {self.model_name}")
-                except Exception as pull_error:
-                    raise RuntimeError(f"Failed to pull model {self.model_name}: {str(pull_error)}")
+                self._download_model(self.model_name)
             else:
                 raise
+
+    def _download_model(self, model_name: str):
+        print(f"Model {self.model_name} is not downloaded. Attempting to pull...")
+        progress_bar = None
+        try:
+            for status in self.client.pull(model_name, stream=True):
+                if "total" in status and "completed" in status:
+                    if progress_bar is None:
+                        progress_bar = tqdm(
+                            total=status["total"],
+                            unit="B", unit_scale=True,
+                            desc=f"Downloading {model_name}"
+                        )
+                    progress_bar.update(status["completed"] - progress_bar.n)
+            print(f"Successfully pulled model {self.model_name}")
+        except ResponseError as error:
+            raise RuntimeError(f"Failed to pull model {self.model_name}: {str(error)}") from error
+        finally:
+            if progress_bar is not None:
+                progress_bar.close()
+
+    def delete(self):
+        self.client.delete(model=self.model_name)
 
     def _invoke(self, messages: list[BaseMessage], stream: bool, tools: dict[str, Tool] | None,
                 documents: list[Document] | None, response_format: type[ParsedType] | None, max_tokens: int | None,
