@@ -34,43 +34,43 @@ class TestRateLimiter:
 
     def test_sync_rate_limit_within_limit(self, rate_limiter: RateLimiter):
         @rate_limiter
-        def test_function():
+        def function():
             return "Executed"
 
         for _ in range(3):
-            assert test_function() == "Executed"
+            assert function() == "Executed"
 
     def test_sync_rate_limit_exceeds_limit(self, rate_limiter: RateLimiter):
         @rate_limiter
-        def test_function():
+        def function():
             return "Executed"
 
         for _ in range(3):
-            assert test_function() == "Executed"
+            assert function() == "Executed"
 
         with pytest.raises(RateLimitException):
-            test_function()
+            function()
 
     @pytest.mark.asyncio
     async def test_async_rate_limit_within_limit(self, rate_limiter: RateLimiter):
         @rate_limiter
-        async def test_function():
+        async def function():
             return "Executed"
 
         for _ in range(3):
-            assert await test_function() == "Executed"
+            assert await function() == "Executed"
 
     @pytest.mark.asyncio
     async def test_async_rate_limit_exceeds_limit(self, rate_limiter: RateLimiter):
         @rate_limiter
-        async def test_function():
+        async def function():
             return "Executed"
 
         for _ in range(3):
-            assert await test_function() == "Executed"
+            assert await function() == "Executed"
 
         with pytest.raises(RateLimitException):
-            await test_function()
+            await function()
 
     def test_shared_limiter(self, shared_rate_limiter: RateLimiter, empty_shared_rate_limiter: RateLimiter):
         assert shared_rate_limiter is empty_shared_rate_limiter
@@ -78,44 +78,44 @@ class TestRateLimiter:
         assert empty_shared_rate_limiter.period_in_seconds == 1
 
         @shared_rate_limiter
-        def test_function_1():
+        def function_1():
             return "Function 1 executed"
 
         @empty_shared_rate_limiter
-        def test_function_2():
+        def function_2():
             return "Function 2 executed"
 
-        assert test_function_1() == "Function 1 executed"
-        assert test_function_2() == "Function 2 executed"
-        assert test_function_1() == "Function 1 executed"
+        assert function_1() == "Function 1 executed"
+        assert function_2() == "Function 2 executed"
+        assert function_1() == "Function 1 executed"
 
         with pytest.raises(RateLimitException):
-            test_function_2()
+            function_2()
 
     def test_limit_reset_after_period(self, rate_limiter: RateLimiter):
         @rate_limiter
-        def test_function():
+        def function():
             return "Executed"
 
         for _ in range(3):
-            assert test_function() == "Executed"
+            assert function() == "Executed"
 
         with pytest.raises(RateLimitException):
-            test_function()
+            function()
 
         time.sleep(1.1)
-        assert test_function() == "Executed"
+        assert function() == "Executed"
 
     def test_sleep_on_rate_limit(self, sleeping_rate_limiter: RateLimiter):
         @sleeping_rate_limiter
-        def test_function():
+        def function():
             return "Executed"
 
         for _ in range(3):
-            assert test_function() == "Executed"
+            assert function() == "Executed"
 
         start_time = time.perf_counter()
-        assert test_function() == "Executed"
+        assert function() == "Executed"
         end_time = time.perf_counter()
         run_duration = end_time - start_time
         assert run_duration >= 0.99
@@ -126,19 +126,19 @@ class TestRateLimiter:
             sleeping_empty_shared_rate_limiter: RateLimiter
     ):
         @sleeping_shared_rate_limiter
-        def test_function_1():
+        def function_1():
             return "Function 1 executed"
 
         @sleeping_empty_shared_rate_limiter
-        def test_function_2():
+        def function_2():
             return "Function 2 executed"
 
-        assert test_function_1() == "Function 1 executed"
-        assert test_function_2() == "Function 2 executed"
-        assert test_function_2() == "Function 2 executed"
+        assert function_1() == "Function 1 executed"
+        assert function_2() == "Function 2 executed"
+        assert function_2() == "Function 2 executed"
 
         start_time = time.perf_counter()
-        test_function_1()
+        function_1()
         end_time = time.perf_counter()
         run_duration = end_time - start_time
         assert run_duration >= 0.99
@@ -150,13 +150,13 @@ class TestRateLimiter:
         thread_count = 10
 
         @rate_limiter
-        def test_function():
+        def function():
             return "Executed"
 
         def worker():
             nonlocal successful_calls, failed_calls
             try:
-                test_function()
+                function()
                 with lock:
                     successful_calls += 1
             except RateLimitException:
